@@ -49,7 +49,7 @@
     \newlength{\titlep@geleftmargin} \setlength{\titlep@geleftmargin}{24mm}
     \newlength{\titlep@gemarginsep} \setlength{\titlep@gemarginsep}{12mm}
     \newlength{\titlep@gewhitemargin} \setlength{\titlep@gewhitemargin}{24mm}
-    \newlength{\titlep@getitleheight} \setlength{\titlep@getitleheight}{68mm}
+    \newlength{\titlep@getitleheight} \setlength{\titlep@getitleheight}{28mm}
     \newlength{\titlep@gefootheight} \setlength{\titlep@gefootheight}{25mm}
     \newlength{\titlep@getopmargin} \setlength{\titlep@getopmargin}{32mm}
     \newlength{\titlep@gebotmargin} \setlength{\titlep@gebotmargin}{28mm}
@@ -63,6 +63,7 @@
   \def\titlep@geTitleAuthor{%
       \vspace*{\titlep@getopmargin}
       \center
+
       \parbox[b][\titlep@getitleheight]{\linewidth}{%
         \center\titlef@nt\@ititle\vfill}
       \parbox[b][4\baselineskip][c]{\linewidth}{%
@@ -85,19 +86,22 @@
   
   \newcommand{\titlep@getextinside}{%
     \begin{minipage}[t][\paperheight]{\titlep@getextwidth}
+      \vspace*{\titlep@gewhitemargin}
+      \includegraphics[scale=0.3]{\@kthlogo}
       \titlep@geTitleAuthor
       \vfill%
       \setlength{\tmpl@ngth}{0.3\titlep@gefootheight}
       \parbox[b][\titlep@gefootheight][b]{\linewidth}{%
         \center\commentf@nt{}%
         \@comment \\[10mm]
-        Communication Systems \\
+        Software Engineering of Distributed Systems \\
         School of Information and Communication Technology \\
         KTH Royal Institute of Technology \\[1mm]
         Stockholm, Sweden \\ [6mm] \@idate\vspace*{\tmpl@ngth}}
       \parbox[b][\titlep@gefootheight][b]{\linewidth}{%
         \center\groupf@nt{}%
-          Examiner: \@examinername}%
+          Examiner: \@examinername\\
+        Supervisor: \@supervisorname}%
       \vspace{\titlep@gebotmargin}
     \end{minipage}}
 
