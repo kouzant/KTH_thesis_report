@@ -1,0 +1,164 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% $Id: front.tex,v 1.3 2005/02/09 21:11:11 lindstrm Exp $
+%%%%%%%%%%%%%%%%%%% FRONT COVER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begingroup
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Define where to put the different parts of the front page
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\makeatletter
+
+\def\originX{-1in-\ifodd\c@page\oddsidemargin\else\evensidemargin\fi}
+\def\originY{-1in-\topmargin-\headheight-\headsep-\parskip-\topskip}
+\newlength{\posX}
+\newlength{\posY}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Define 'macros' for the parts (header, footers, brief, details)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\putbox(#1,#2,#3){% (horizontal,vertical) offsets.
+  \vbox to 0pt{\kern#2\hbox{\kern#1#3}\vss}\nointerlineskip}%
+
+
+
+  \newlength{\tmpl@ngth}
+  \newlength{\titlep@geboxwidth}
+  \settowidth{\titlep@geboxwidth}{\colorbox{white}{}}
+
+  \if@fontVerdana
+    \newcommand{\titlef@nt}{\fontfamily{jvn}\fontsize{18}{24}\selectfont}
+    \newcommand{\subtitlef@nt}{\fontfamily{jvn}\fontsize{10}{12}\selectfont}
+    \newcommand{\authorf@nt}{\fontfamily{jvn}\fontsize{12}{14.5}\selectfont}
+    \newcommand{\thesistypef@nt}{\fontfamily{jvn}\fontsize{12}{14.5}\selectfont}
+    \newcommand{\commentf@nt}{\fontfamily{jvn}\fontsize{10}{14.5}\selectfont}
+    \newcommand{\groupf@nt}{\fontfamily{jvn}\fontsize{12}{14.5}\selectfont}
+
+  \else
+    \newcommand{\titlef@nt}{\sffamily\fontsize{20}{24}\selectfont}
+    \newcommand{\subtitlef@nt}{\sffamily\fontsize{12}{12}\selectfont}
+    \newcommand{\authorf@nt}{\sffamily\fontsize{14}{14.5}\selectfont}
+    \newcommand{\thesistypef@nt}{\sffamily\fontsize{14}{14.5}\selectfont}
+    \newcommand{\commentf@nt}{\sffamily\fontsize{12}{14.5}\selectfont}
+    \newcommand{\groupf@nt}{\sffamily\fontsize{14}{14.5}\selectfont}
+  \fi
+
+
+    \newlength{\titlep@getextwidth} \setlength{\titlep@getextwidth}{162mm}
+    \newlength{\titlep@geleftmargin} \setlength{\titlep@geleftmargin}{24mm}
+    \newlength{\titlep@gemarginsep} \setlength{\titlep@gemarginsep}{12mm}
+    \newlength{\titlep@gewhitemargin} \setlength{\titlep@gewhitemargin}{24mm}
+    \newlength{\titlep@getitleheight} \setlength{\titlep@getitleheight}{68mm}
+    \newlength{\titlep@gefootheight} \setlength{\titlep@gefootheight}{25mm}
+    \newlength{\titlep@getopmargin} \setlength{\titlep@getopmargin}{32mm}
+    \newlength{\titlep@gebotmargin} \setlength{\titlep@gebotmargin}{28mm}
+    \newlength{\titlep@gelogocenter} \setlength{\titlep@gelogocenter}{60mm}
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  %% Graphical Profile 2003
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  \def\titlep@geTitleAuthor{%
+      \vspace*{\titlep@getopmargin}
+      \center
+      \parbox[b][\titlep@getitleheight]{\linewidth}{%
+        \center\titlef@nt\@ititle\vfill}
+      \parbox[b][4\baselineskip][c]{\linewidth}{%
+        \center\subtitlef@nt\@isubtitle\vfill}
+      \setlength{\tmpl@ngth}{\titlep@gelogocenter-\titlep@getopmargin-
+        \titlep@getitleheight-2\baselineskip}
+      \parbox[b][\tmpl@ngth]{\linewidth}{%
+        \authorf@nt\center{\@iauthor}}}
+
+  \newcommand{\titlep@getext}{%
+    \begin{minipage}[t][\paperheight]{\titlep@getextwidth}
+      \titlep@geTitleAuthor
+      \vfill%
+      \parbox[b][\titlep@gefootheight][b]{\linewidth}{%
+        \center\thesistypef@nt{}%
+        \@thesistype\\
+        Stockholm, Sweden \@iyear}%
+      \vspace{\titlep@gebotmargin}
+    \end{minipage}}
+  
+  \newcommand{\titlep@getextinside}{%
+    \begin{minipage}[t][\paperheight]{\titlep@getextwidth}
+      \titlep@geTitleAuthor
+      \vfill%
+      \setlength{\tmpl@ngth}{0.3\titlep@gefootheight}
+      \parbox[b][\titlep@gefootheight][b]{\linewidth}{%
+        \center\commentf@nt{}%
+        \@comment \\[10mm]
+        Communication Systems \\
+        School of Information and Communication Technology \\
+        KTH Royal Institute of Technology \\[1mm]
+        Stockholm, Sweden \\ [6mm] \@idate\vspace*{\tmpl@ngth}}
+      \parbox[b][\titlep@gefootheight][b]{\linewidth}{%
+        \center\groupf@nt{}%
+          Examiner: \@examinername}%
+      \vspace{\titlep@gebotmargin}
+    \end{minipage}}
+
+    
+ \newcommand{\titlep@extra}{%
+    \begin{minipage}[t][\paperheight]{1.55\titlep@getextwidth}
+      \vfill%
+      \parbox[b][\titlep@gefootheight][b]{\linewidth}{%
+        \flushleft\commentf@nt{}%
+        \copyright~\@iauthor, \@idate  \\[6mm] }
+      \vspace{\titlep@gebotmargin}
+    \end{minipage}}
+
+  \newcommand{\titlep@gepatch}{%
+    \setlength{\tmpl@ngth}{\titlep@geleftmargin+\titlep@getextwidth+\titlep@gemarginsep-\titlep@geboxwidth}%
+    \begin{minipage}[c]{\tmpl@ngth}%
+      \setlength{\tmpl@ngth}{\paperheight}%
+      \titlep@gecolorbox{\parbox[t][\tmpl@ngth]{\linewidth}{\mbox{}}}%
+    \end{minipage}}
+
+ \newcommand{\titlep@gepatchbog}{%
+    \setlength{\tmpl@ngth}{\titlep@geleftmargin+\titlep@getextwidth+\titlep@gemarginsep-\titlep@geboxwidth}%
+    \begin{minipage}[c]{\tmpl@ngth}%
+      \setlength{\tmpl@ngth}{\paperheight}%
+    \end{minipage}}
+  
+
+
+  %%%%%%%%%%%%%%%%%%%%%%%
+  %% Draw Inside Cover
+  %%%%%%%%%%%%%%%%%%%%%%%
+  \thispagestyle{empty}
+
+  \setlength{\posX}{\originX+\titlep@geleftmargin}
+  \setlength{\posY}{\originY}
+  \putbox(\posX,\posY,\titlep@getextinside)
+  \setlength{\posX}{\originX+\paperwidth-\titlep@gewhitemargin}
+  \setlength{\posY}{\originY}
+  \newpage
+
+  \thispagestyle{empty}
+
+  \setlength{\posX}{\originX+1.55\titlep@geleftmargin}
+  \setlength{\posY}{\originY}
+  \putbox(\posX,\posY,\titlep@extra)
+  \cleardoublepageEmpty
+
+  \global\let\tmpl@ngth\relax
+  \global\let\titlep@geboxwidth\relax
+
+  \global\let\titlef@nt\relax
+  \global\let\subtitlef@nt\relax
+  \global\let\authorf@nt\relax
+  \global\let\thesistypef@nt\relax
+  \global\let\commentf@nt\relax
+  \global\let\groupf@nt\relax
+
+
+\global\let\posX\relax
+\global\let\posY\relax
+
+\makeatother
+\endgroup
+

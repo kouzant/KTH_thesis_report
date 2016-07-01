@@ -1,0 +1,313 @@
+%%----------------------------------------------------------------------
+%% $Id: costhesis.sty,v 1.10 2012/02/23 21:10:13 lindstrm Exp $
+%%----------------------------------------------------------------------
+%% costhesis.sty
+%
+% LaTeX package which defines a layout for reports produced at CoS
+%
+% Documentation & history after (last) \endinput.
+%
+% based upon rstreport
+%
+% Copyright (C) 2000 by:
+%
+% Magnus Lindstrom
+% c/o Radiosystemteknik
+% KTH
+% SE-100 44 STOCKHOLM
+% Sweden
+% E-Mail: magnus.lindstrom@radio.kth.se
+%
+% This program can be redistributed and/or modified under the terms
+% of the LaTeX Project Public License, distributed from CTAN
+% archives as macros/latex/base/lppl.txt; either
+% version 1 of the License, or (at your option) any later version.
+%
+%%----------------------------------------------------------------------
+%
+% BUGS:
+%
+%   - White dot: Some versions of GS produce broken PDF code for empty
+%     pages. As a work around, a small white dot (\bugwhitedot) was added
+%     to \cleardoublepageEmpty (rstreport.sty) and to the back matter
+%     drawing code (back.tex) to make sure there are no blank pages. The
+%     white dot may be visible on a coloured background. A better fix is
+%     needed.
+%
+%%----------------------------------------------------------------------
+
+
+
+\def\filename{costhesis}
+\def\fileversion{V0.4}
+\def\filedate{2012/02/21}
+
+\@ifundefined{costhesis}{}{\endinput}
+
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]
+\ProvidesPackage{\filename}[\filedate]
+\edef\RSTreport{Package `\filename', \fileversion, <\filedate>}
+\expandafter\everyjob\expandafter{\the\everyjob\typeout{\RSTreport}}
+\typeout{\RSTreport}
+
+\newif\if@slheader \@slheaderfalse
+\newif\if@colour \@colourfalse
+\newif\if@fontVerdana \@fontVerdanafalse
+
+\DeclareOption{verdana}{%
+  \@fontVerdanatrue}
+\DeclareOption{msc}{%
+  \def\@comment{Master of Science Thesis}
+  \def\@thesistype{Master of Science Thesis}
+}
+\DeclareOption{bsc}{%
+  \def\@comment{Bachelor of Science Thesis}
+  \def\@thesistype{Bachelor of Science Thesis}
+}
+\DeclareOption{scheader}{}
+\DeclareOption{slheader}{%
+  \@slheadertrue}
+\DeclareOption{blank}{%
+  \def\cleardoublepage{\cleardoublepageEmpty}}
+\DeclareOption{blankmsg}{%
+  \def\cleardoublepage{\clearpage
+    \if@twoside \ifodd\c@page\else
+    \hbox{}
+    \vspace*{\fill}
+    \begin{center}
+      %This page intentionally contains only this sentence.
+    \end{center}
+    \vspace{\fill}
+    \thispagestyle{empty}
+    \newpage
+    \if@twocolumn\hbox{}\newpage\fi\fi\fi}}
+\ExecuteOptions{internal}
+\ProcessOptions
+
+%FIXME: Small white dot added on empty pages to work around the GS bug
+%       that generates corrupted PDFs for empty pages. 
+\def\bugwhitedot{\special{"newpath 1 setgray 0 0 moveto 0 0 lineto stroke}}
+\def\cleardoublepageEmpty{\clearpage
+  \if@twoside \ifodd\c@page\else
+  \hbox{\bugwhitedot}
+  \thispagestyle{empty}
+  \newpage
+  \if@twocolumn\hbox{\bugwhitedot}\newpage\fi\fi\fi}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Package inclusions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\RequirePackage{graphicx}
+%\RequirePackage{color}
+\RequirePackage{calc}
+\RequirePackage{fancyhdr}
+%\RequirePackage{rotating}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Redefinition of front, main and back matters (includes front and back)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newif\if@mainmatter \@mainmattertrue
+\renewcommand\frontmatter{%
+  \if@openright
+    \cleardoublepageEmpty
+  \else
+    \clearpage
+  \fi
+  \@mainmatterfalse
+  \pagenumbering{roman}
+  \InputIfFileExists{front.tex}
+    {}{\PackageError{\RSTreport}{Couldn't find file front.tex}{}}
+  \setcounter{page}{3}}
+\renewcommand\mainmatter{%
+  \if@openright
+    \cleardoublepage
+  \else
+    \clearpage
+  \fi
+  \@mainmattertrue
+  \pagenumbering{arabic}}
+\renewcommand\backmatter{%
+  \if@openright
+    \cleardoublepage
+  \else
+    \clearpage
+  \fi
+  \@mainmatterfalse
+%% removed 2012.02.21 GQMJr - unnecessary as the color cover will be generated later
+%%  \InputIfFileExists{back.tex}
+%%    {}{\PackageError{\RSTreport}{Couldn't find file back.tex}{}}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Commands and environments in the front matter (toc,lof,abstract...)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\specialchapter#1{%
+  \if@slheader
+    \chapter*{#1 \@mkboth{\MakeUppercase{#1}}{\MakeUppercase{#1}}}%
+  \else
+    \chapter*{#1 \@mkboth{#1}{#1}}%
+  \fi}
+
+\renewcommand\tableofcontents{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\contentsname}%
+    \@starttoc{toc}
+    \if@restonecol\twocolumn\fi
+    }
+
+\renewcommand\listoffigures{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\listfigurename}%
+    \@starttoc{lof}
+    \if@restonecol\twocolumn\fi
+    }
+
+\renewcommand\listoftables{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\listtablename}%
+    \@starttoc{lot}%
+    \if@restonecol\twocolumn\fi
+    }
+
+\newenvironment{abstract}{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\abstractname}%
+    }{%
+    \if@restonecol\twocolumn\fi
+    \if@twoside\cleardoublepage\else\clearpage\fi\@mkboth{}{}
+    }
+
+\newenvironment{acknowledgements}{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\acknowledgementsname}%
+    }{%
+    \if@restonecol\twocolumn\fi
+    \if@twoside\cleardoublepage\else\clearpage\fi\@mkboth{}{}
+    }
+
+\newenvironment{abbreviations}{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\abbreviationsname}%
+    }{%
+    \if@restonecol\twocolumn\fi
+    \if@twoside\cleardoublepage\else\clearpage\fi\@mkboth{}{}
+    }
+
+\newenvironment{notations}{%
+    \if@twocolumn
+      \@restonecoltrue\onecolumn
+    \else
+      \@restonecolfalse
+    \fi
+    \specialchapter{\notationsname}%
+    }{%
+    \if@restonecol\twocolumn\fi
+    \if@twoside\cleardoublepage\else\clearpage\fi\@mkboth{}{}
+    }
+
+\renewenvironment{thebibliography}[1]{%
+    \specialchapter{\bibname}%
+    \addcontentsline{toc}{chapter}{\protect\numberline{}\bibname}%
+    \list{\@biblabel{\@arabic\c@enumiv}}%
+    {\settowidth\labelwidth{\@biblabel{#1}}%
+      \leftmargin\labelwidth
+      \advance\leftmargin\labelsep
+      \@openbib@code
+      \usecounter{enumiv}%
+      \let\p@enumiv\@empty
+      \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+    \sloppy
+    \clubpenalty4000
+    \@clubpenalty \clubpenalty
+    \widowpenalty4000%
+    \sfcode`\.\@m}
+    {\def\@noitemerr
+      {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+
+\newcommand\abstractname{Abstract}
+\newcommand\acknowledgementsname{Acknowledgements}
+\newcommand\abbreviationsname{List of Abbreviations}
+\newcommand\notationsname{List of Notations}
+\renewcommand\bibname{References}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Layout settings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\headheight 14pt
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Headers and footers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[EL,OR]{\thepage}
+\if@slheader
+  \fancyhead[ER]{\textsl \leftmark}
+  \fancyhead[OL]{\textsl \rightmark}
+\else
+  \fancyhead[ER]{\textsc \leftmark}
+  \fancyhead[OL]{\textsc \rightmark}
+\fi
+
+\renewcommand{\headrulewidth}{0pt}
+\if@slheader
+  \renewcommand{\chaptermark}[1]{\markboth{\MakeUppercase{\@chapapp}\ \thechapter.\ \MakeUppercase{#1}}{}}
+  \renewcommand{\sectionmark}[1]{\markright{\thesection.\ \MakeUppercase{#1}}{}}
+\else
+  \renewcommand{\chaptermark}[1]{\markboth{\@chapapp\ \thechapter.\ #1}{}}
+  \renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}{}}
+\fi
+
+\newcommand*{\ititle}[1]{\gdef\@ititle{#1}}
+\newcommand*{\isubtitle}[1]{\gdef\@isubtitle{#1}}
+\newcommand*{\iauthor}[1]{\gdef\@iauthor{#1}}
+\newcommand*{\idate}[3]{\gdef\@iyear{#1}\gdef\@idate{#3 #2 #1}}
+\newcommand*{\iidate}[1]{\gdef\@idate{#1}}
+\newcommand*{\rnumber}[1]{\gdef\@rnumber{#1}}
+\newcommand*{\examinername}[1]{\gdef\@examinername{#1}}
+\newcommand*{\itrita}[2]{\gdef\@itritaY{#1}\gdef\@itritaN{#2}}
+
+
+%  \ititle{Title}
+%  \isubtitle{}
+%  \iauthor{Author}
+%  \idate{YEAR}{Month}{Day}
+%  \itrita{XX}{XX}
+%  \rnumber{X}
+%  \examinername{X}
+
+
+\endinput
+
