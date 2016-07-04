@@ -31,4 +31,10 @@ It is clear by now that these volumes need a paradigm shift
 from the traditional way we store and analyze data. It is not possible
 anymore to store them in a single machine. We need to employ a
 distributed system to harness the power of those data and extract
-valuable results within a reasonal time frame.
+valuable results within a reasonal time frame. On top of that we have
+to take under consideration that hardware will fail for various
+reasons. A minimum requirement would be not to lose our data, so we
+should keep them in several replicas. Going one step further, we would
+like our analyzing jobs to continue running even though one machine failed. These
+jobs usually take hours to complete, so re-running them is not the
+best approach.
