@@ -68,7 +68,11 @@
 %%\usepackage{minted}		%% For source code highlighting
 
 \usepackage{hyperref}		
-\usepackage[all]{hypcap}	 %% Prevents an issue related to hyperref and caption linking
+\usepackage[all]{hypcap}	 %% Prevents an issue related to
+                                %% hyperref and caption linking
+\usepackage[backend=biber, sorting=none]{biblatex}
+\addbibresource{biblio.bib}
+
 %% setup hyperref to use the darkblue color on links
 \hypersetup{colorlinks,breaklinks,
             linkcolor=darkblue,urlcolor=darkblue,
@@ -183,15 +187,21 @@
 \setcounter{secnumdepth}{5} 
 \chapter{Introduction}
 \label{chap:introduction}
+\input{./chapters/Introduction/introduction.tex}
+
 %% Longer problem statement
 %% General introduction to the area
 \section{Problem description}
 \label{sec:problem_description}
 \input{./chapters/Introduction/problem_description.tex}
 
-\section{Problem context}
-\label{sec:problem_context}
-\input{./chapters/Introduction/problem_context.tex}
+\section{Problem Statement}
+\label{sec:problem_statement}
+\input{./chapters/Introduction/problem_statement.tex}
+
+\section{Goals, Benefits, Ethics and Sustainability}
+\label{sec:goals_ethics}
+\input{./chapters/Introduction/goals_ethics.tex}
 
 \section{Structure of this thesis}
 \label{sec:thesis_structure}
@@ -233,11 +243,14 @@
 \input{./chapters/Conclusions/future_work/undone.tex}
 
 
-\bibliography{report}
+%%\bibliography{report}
 %%\bibliographystyle{IEEEtran}
 %%\bibliographystyle{unsrturl}
 %%\bibliographystyle{unsrtnat}
-\bibliographystyle{myIEEEtran}
+%%\bibliographystyle{myIEEEtran}
+
+\printbibliography
+
 \appendix
 \chapter{Insensible Approximation}
 
