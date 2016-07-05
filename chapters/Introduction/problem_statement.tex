@@ -14,7 +14,7 @@ single heartbeat.
 Another equally important feature of HopsYarn is that RM stores
 every event received and any scheduling decision into the MySQL
 cluster. That makes our solution highly available with minimum
-failover period. When a RM instance fails it re-builts the view of the
+failover period. When a RM instance fails it re-builds the view of the
 cluster by reading the latest state from the database. More details on
 the architecture of both YARN and HopsYarn will be given in Chapter
 \ref{chap:background} and \ref{chap:analysis}.
@@ -22,6 +22,21 @@ the architecture of both YARN and HopsYarn will be given in Chapter
 All these read/write operations to the database do not come without
 a cost. First and foremost is the network latency. Even with high
 throughput, low latency network in between of the RM/RT and the database, still
-they take more time than in-memory operations. Especially in cases
+it takes more time than in-memory operations. Especially in cases
 where RM operations need more than one round-trip to the database, the
 difference in performance is noticeable.
+
+A great advantage of using a relational database is the support of
+foreign key constraints. The information that we store is semantically
+related. In a SQL schema that is directly translated to foreign key
+constraints. A trivial example is information regarding the containers
+running on node and information regarding the node itself. Clearly, we
+should never run into a situation where we try to persist a container
+running on a node without having information about the node at
+all. Moreover, foreign key constraints work the other way around. By
+removing the information about a node from the database we want the
+information about running containers on that node to be purged
+too. Such constraints, although they seem tempting to use, pose a
+great performance degradation. Particularly when we aim for millions
+of operations per second, the use of foreign key constraints should be
+limited and very well designed.
