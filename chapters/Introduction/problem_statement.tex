@@ -1,24 +1,3 @@
-In Hops in order to improve performance and HA of the RM we have introduced an
-in-memory distributed MySQL database which stores all the necessary
-metadata. One great feature of HopsYarn is that the
-\emph{ResourceTrackerService} (RT) of the RM is distributed into multiple
-nodes in the cluster. That service is responsible for receiving and handling
-heartbeats from the NMs. That way each instance handles only a portion of the total NM
-heartbeats. The updated metadata are then stored into the database and
-are streamed to the RM to update its view of the cluster. By load
-balancing the ResourceTrackerService we have increased the performance
-of the system while decreasing the load of the master RM which can
-perform the rest of the operations without the load of handling every
-single heartbeat.
-
-Another equally important feature of HopsYarn is that RM stores
-every event received and any scheduling decision into the MySQL
-cluster. That makes our solution highly available with minimum
-failover period. When a RM instance fails it re-builds the view of the
-cluster by reading the latest state from the database. More details on
-the architecture of both YARN and HopsYarn will be given in Chapter
-\ref{chap:background} and \ref{chap:analysis}.
-
 All these read/write operations to the database do not come without
 a cost. First and foremost is the network latency. Even with high
 throughput, low latency network in between of the RM/RT and the database, still
@@ -40,3 +19,22 @@ too. Such constraints, although they seem tempting to use, pose a
 great performance degradation. Particularly when we aim for millions
 of operations per second, the use of foreign key constraints should be
 limited and very well designed.
+
+Finally, the transaction state manager of Hops should try to commit
+various states in parallel as much as possible but on the other hand
+ensure the order of two colliding states. For example there should
+never be the case where two states change information about the same
+node in the cluster and yet be committed in parallel. Similarly, two
+states that change information in the database about different
+entities should be committed in parallel.
+
+The distributed MySQL cluster database is a central building block in our
+architecture. A slow commit and process time will result in less events being
+streamed and handled by the RM, directly affecting the cluster
+utilization and the view of the cluster from the RM perspective.
+Also, in terms of HA a slow commit time will decrease the
+rate of handled events while increasing the rate of queued events that
+are to be handled. Our goal is to be able to scale up to 10000 NMs
+with multiple RTs. With the current mechanism this is not possible due
+to delays both in the transaction manager mechanism and in the commit
+time.

@@ -41,3 +41,24 @@ second. On top of that for every single application launched, the AM
 service should also heartbeat the RM. This produces a considerable
 amount of load on the RM side which has to handle all those heartbeats
 and also make scheduling decisions.
+
+In Hops in order to improve performance and HA of the RM we have introduced an
+in-memory distributed MySQL database which stores all the necessary
+metadata. One great feature of HopsYarn is that the
+\emph{ResourceTrackerService} (RT) of the RM is distributed into multiple
+nodes in the cluster. That service is responsible for receiving and handling
+heartbeats from the NMs. That way each instance handles only a portion of the total NM
+heartbeats. The updated metadata are then stored into the database and
+are streamed to the RM to update its view of the cluster. By load
+balancing the ResourceTrackerService we have increased the performance
+of the system while decreasing the load of the master RM which can
+perform the rest of the operations without the load of handling every
+single heartbeat.
+
+Another equally important feature of HopsYarn is that RM stores
+every event received and any scheduling decision into the MySQL
+cluster. That makes our solution highly available with minimum
+failover period. When a RM instance fails it re-builds the view of the
+cluster by reading the latest state from the database. More details on
+the architecture of both YARN and HopsYarn will be given in Chapter
+\ref{chap:background} and \ref{chap:analysis}.
