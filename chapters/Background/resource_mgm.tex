@@ -1,1 +1,14 @@
-Something general about MapReduce and YARN resource management
+So far we have discussed how to store datasets in the order of
+terabytes and even petabytes in a distributed
+and reliable way. We have gone through the most important ideas that
+lay behind HDFS, the distributed file system of Hadoop, and how it
+manages to overcome the fact that machines will fail and to avoid
+transfer of huge files into computation nodes in contrast to the HPC
+architecture.
+
+That is half the way of extracting valuable results out of big data
+though. A cluster consists of thousands of physical machines with
+certain resources in terms of CPUs, amount of RAM, network bandwidth,
+disk space etc. We need a mechanism to harness all that power while at
+same time exploiting the locality awareness to minimize data transfer
+and maximize cluster utilization.
