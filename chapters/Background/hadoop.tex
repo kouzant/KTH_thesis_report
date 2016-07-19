@@ -18,4 +18,18 @@ With that feature in mind, we do not move datasets anymore to the
 computing nodes but the executable of our job to the nodes where our
 data reside. When the processing of the individual blocks is done, we
 gather the result. That is a great paradigm shift from the traditional way
-of processing big datasets.
+of processing big datasets. A high level overview of the Hadoop
+architecture is depicted in Figure
+\ref{fig:hadoop_arch_overview}. Datasets are split into blocks and
+are stored in the nodes of cluster, both the original and the
+replicas. When a user submits a job, the workflow manager will copy
+the job to the appropriate nodes, which in parallel will execute
+it. Finally, the workflow manager will gather the individual results,
+aggregate them and return the final result to the client.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{resources/images/Background/hadoop_arch_overview.png}
+\label{fig:hadoop_arch_overview}
+\caption{Hadoop high level architecture}
+\end{figure}
