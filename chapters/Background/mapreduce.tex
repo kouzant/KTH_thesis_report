@@ -1,1 +1,15 @@
-This will be some intro to MapReduce workflow
+After the world wide web explosion at the ending of 1990's, Google has
+emerged as one of the most significant web searching companies.
+The novelty of Google was PageRank \cite{ilprints361}, an
+algorithm counting the number of links to a webpage to determine its
+importance. In order to apply the PageRank algorithm and form the
+Google search results, first Google has to scrape and index ``every''
+webpage. As of 2004 the raw size of the documents that had been
+collected was more than 20 terabytes
+\cite{Dean:2004:MSD:1251254.1251264}. Although the engineers at Google
+have distributed and parallelized the algorithm, there were more tasks
+that other teams have parallelized in a different way making it
+difficult to maintain such a diverse codebase. That lead them in 2004
+to publish a paper about MapReduce, a generic framework to write distributed
+applications that hide all the complexity of fault-tolerance, locality
+awareness, load balancing etc.
