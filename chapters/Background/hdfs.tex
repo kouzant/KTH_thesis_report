@@ -62,4 +62,33 @@ is kept up-to-date with the blocks that are stored in every DN.
 \subsubsection{DataNode}
 \label{sssec:dn}
 
-Here I will briefly describe the DataNode
+The DN is the slave entity in the HDFS master/slave architecture as depicted in
+Figure \ref{fig:hadoop_hdfs} and the actual storage of blocks. Upon a
+client request to store a file in HDFS, the NN instructs it (the
+client) which DNs to contact to store the individual file block. The
+same procedure is followed when a client requests to read a file. The
+NN returns a list with DNs that store the blocks forming the whole
+file. The client then contacts each and every DN, fetching the
+corresponding blocks.
+
+A DN periodically heartbeats to NN. As I have explained in Section
+\ref{sssec:nn}, the heartbeat contains a list of blocks, that the DN
+issued the heartbeat stores, so that the NN maintains a map of file
+blocks and DataNodes. Also, the heartbeat signifies that the DN is
+alive and can be used for storage and retrieval of blocks. Heartbeats
+also carry information regarding the status of the DN such as total
+storage capacity, storage in use etc. These metrics are taken
+consideration by the NN when assigning blocks to DN.
+
+The DataNode also perform various operations as instructed by the
+NN. These instructions are sent to the DN via the heartbeat
+mechanism as a reply to the heartbeat sent by the DN. Such operations
+might be creation, deletion or replication of a block. The block
+replication is done according to the replication strategy. A common
+strategy for placing replicas with a replication factor of three, is
+to place the first replica in the same node as the client runs, the
+second in another node in a different rack (off-rack) and the third
+one in the same rack as the second but in a different node. Adjusting
+the replication factor and the replication policy can greatly affect
+the write and read performance of the HDFS cluster and should be
+carefully tweaked.
