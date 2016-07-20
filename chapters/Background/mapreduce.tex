@@ -52,13 +52,13 @@ in MapReduce architecture, the \emph{Master} and the \emph{Workers}.
 The \emph{Master} has the role of the coordinator that pushes the jobs
 to the worker machines. It keeps track of the status of jobs in the
 workers, informs other workers for the intermediate files produced
-during the Map phase and pings the workers to verify their liveness.
+during the Map phase and pings the workers to verify their liveliness.
 
 The \emph{Workers} reside at the same physical hardware as the GFS
-nodes to take advantage of the data locality. They are devided into
+nodes to take advantage of the data locality. They are divided into
 \emph{mappers}, which execute the Map function and \emph{reducers},
 which perform the reduce phase as instructed. Workers are
-preconfigured with available map or reduce slots depending on their
+pre-configured with available map or reduce slots depending on their
 CPU or RAM.
 
 At the very beginning, a user submits a job to Master. Master forks
@@ -66,17 +66,42 @@ the submitted job and is responsible to schedule the forks on workers
 that $(a)$ have available map/reduce slots and $(b)$ have the
 requested datasets stored locally. Upon the scheduling is done, the
 Map phase begins in the mappers. They read the datasets from the local
-hard drive and perform the Map function. Master periodicaly pings the
+hard drive and perform the Map function. Master periodically pings the
 mappers to get informed about the status of the job and the health of
 the node itself. When a mapper node completes its task, it writes the
 intermediate key/value pairs to the local file system and informs the
 Master node. The Master node in turn, notifies the reducer nodes that
 an intermediate result is available at a specific node, where the
-latter reads it (the result) remotely and perform the reduce function.
-If the Master misses a ping from a mapper node, it declares it as dead
-and reschedules the job in another node.
+latter reads it (the result) remotely and perform the reduce
+function. Finally, when all the reducers have completed the Reduce
+phase, the Master notifies the user program.
 
+\subsubsection{MapReduce Fault Tolerance}
 
+Primary concern of the engineers was the fact
+that machines will eventually fail. MapReduce will run on a cluster of
+thousands of machines so the probability of a failed machine would be
+higher. For that reason they equipped MapReduce with a heartbeating
+mechanism in order to be able to handle such situations.
+The Master periodically pings the workers. The workers should respond back
+within a predefined timeout before they are declared dead. When a node
+that performs the Map phase is declared dead, then the job that was
+running at that node is set to \emph{idle} and is rescheduled on
+another node. Similarly, when a map job has finished, since the
+intermediate result is written to the local hard drive, the job has to
+be rescheduled in a different machine. When a reducer node has failed
+and the job is still in \emph{running} state, then it is set back in
+\emph{idle} state and assigned to another node. In case of a completed
+Reduce phase, the result is stored in the global file system, GFS in
+that case. So, even with a failed reducer machine, the result will
+still be available and the job should not be rescheduled.
+
+While a Worker failure does not greatly affect the MapReduce job, it
+is not the same case with a Master failure. If a machine that is a
+Master node fails, then the whole MapReduce job is canceled and the
+client is informed so that it can retry later on. ``However, given
+that there is only a single master, its failure is unlikely;''
+\cite{Dean:2004:MSD:1251254.1251264}.
 
 
 *easy to use, generic enough to fit in many problems, parallel, fault-tolerant

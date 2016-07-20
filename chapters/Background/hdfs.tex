@@ -18,8 +18,8 @@ a cluster cheaper than in HPC. HDFS has two main entities, the NameNode
 \caption{HDFS architecture}
 \end{figure}
 
-\subsubsection{NameNode}
-\label{sssec:nn}
+\subsection{NameNode}
+\label{ssec:nn}
 
 An HDFS cluster consists of a single active NN that is responsible for the
 file system metadata, the blocks replication and the health
@@ -59,8 +59,8 @@ DNs. When a DN sends a heartbeat to the NN, it piggybacks a list with
 the blocks that it currently stores. That way, the BlockMap in the NN
 is kept up-to-date with the blocks that are stored in every DN.
 
-\subsubsection{DataNode}
-\label{sssec:dn}
+\subsection{DataNode}
+\label{ssec:dn}
 
 The DN is the slave entity in the HDFS master/slave architecture as depicted in
 Figure \ref{fig:hadoop_hdfs} and the actual storage of blocks. Upon a
@@ -72,7 +72,7 @@ file. The client then contacts each and every DN, fetching the
 corresponding blocks.
 
 A DN periodically heartbeats to NN. As I have explained in Section
-\ref{sssec:nn}, the heartbeat contains a list of blocks, that the DN
+\ref{ssec:nn}, the heartbeat contains a list of blocks, that the DN
 issued the heartbeat stores, so that the NN maintains a map of file
 blocks and DataNodes. Also, the heartbeat signifies that the DN is
 alive and can be used for storage and retrieval of blocks. Heartbeats
