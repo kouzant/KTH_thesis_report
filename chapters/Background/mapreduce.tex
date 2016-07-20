@@ -39,7 +39,8 @@ value would be the occurrences of the word in the text.
 Google provided a framework which took advantage of the locality
 awareness of the already existing GFS and the MapReduce programming
 paradigm. The execution overview of MapReduce is depicted in Figure
-\ref{fig:mapreduce_execution_overview}.
+\ref{fig:mapreduce_execution_overview}. We can identify two entities
+in MapReduce architecture, the \emph{Master} and the \emph{Workers}.
 
 \begin{figure}
 \centering
@@ -47,5 +48,35 @@ paradigm. The execution overview of MapReduce is depicted in Figure
 \label{fig:mapreduce_execution_overview}
 \caption{MapReduce execution overview \cite{Dean:2004:MSD:1251254.1251264}}
 \end{figure}
+
+The \emph{Master} has the role of the coordinator that pushes the jobs
+to the worker machines. It keeps track of the status of jobs in the
+workers, informs other workers for the intermediate files produced
+during the Map phase and pings the workers to verify their liveness.
+
+The \emph{Workers} reside at the same physical hardware as the GFS
+nodes to take advantage of the data locality. They are devided into
+\emph{mappers}, which execute the Map function and \emph{reducers},
+which perform the reduce phase as instructed. Workers are
+preconfigured with available map or reduce slots depending on their
+CPU or RAM.
+
+At the very beginning, a user submits a job to Master. Master forks
+the submitted job and is responsible to schedule the forks on workers
+that $(a)$ have available map/reduce slots and $(b)$ have the
+requested datasets stored locally. Upon the scheduling is done, the
+Map phase begins in the mappers. They read the datasets from the local
+hard drive and perform the Map function. Master periodicaly pings the
+mappers to get informed about the status of the job and the health of
+the node itself. When a mapper node completes its task, it writes the
+intermediate key/value pairs to the local file system and informs the
+Master node. The Master node in turn, notifies the reducer nodes that
+an intermediate result is available at a specific node, where the
+latter reads it (the result) remotely and perform the reduce function.
+If the Master misses a ping from a mapper node, it declares it as dead
+and reschedules the job in another node.
+
+
+
 
 *easy to use, generic enough to fit in many problems, parallel, fault-tolerant
