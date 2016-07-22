@@ -77,7 +77,6 @@ function. Finally, when all the reducers have completed the Reduce
 phase, the Master notifies the user program.
 
 \subsubsection{MapReduce Fault Tolerance}
-
 Primary concern of the engineers was the fact
 that machines will eventually fail. MapReduce will run on a cluster of
 thousands of machines so the probability of a failed machine would be
@@ -103,5 +102,44 @@ client is informed so that it can retry later on. ``However, given
 that there is only a single master, its failure is unlikely;''
 \cite{Dean:2004:MSD:1251254.1251264}.
 
+\subsubsection{Limitations}
+MapReduce facilitated engineers to ``easily'' write parallel data
+processing applications by hiding all the complexity of a distributed
+system. It provided some sort of fault tolerance and it was generic
+enough to fit in many applications domain.
 
-*easy to use, generic enough to fit in many problems, parallel, fault-tolerant
+MapReduce and Hadoop over the years has become the industry standard
+for processing and storing big volumes of data. After some period of
+heavy usage it became clear that, although the platform itself suited
+the needs for distributed, reliable storage and cluster management,
+there were some limitations that had to be addressed. The two key
+shortcomings were regarding the tight coupling of a programming model
+with the resource management infrustructure and the centralized
+handling of jobs \cite{Vavilapalli:2013:AHY:2523616.2523633, 6680946}.
+
+A user who wanted a distributed parallel data processing in MapReduce
+all it had to do, was to provide implementation for the two
+first-order functions \emph{Map} and \emph{Reduce}. This static
+map-reduce pipeline is very limiting as every job should have exactly one
+Map function followed by an optional Reduce function. This workflow is
+not suitable for large scale computations, such as machine learning
+programs that require multiple iterations over a dataset. That means
+that multiple individual MapReduce jobs had to be scheduled while the
+frequent write of data in disk or in a distributed file system would
+impose a considerable latency. A common pattern
+\cite{Vavilapalli:2013:AHY:2523616.2523633} was to submit jobs with a
+map phase only that spawned alternative frameworks or even web
+servers. The scheduler had no semantics about the job except that they
+were map jobs with a consiquence in the cluster utilization, creating
+deadlocks and a genaral instability to the system. The second drawback
+of MapReduce and Hadoop 1.x was the centralized job handling and
+monitoring of their flow. The Master or the \emph{JobTracker} should
+monitor every single job, receiving liveness heartbeats, resource
+requests etc. The is a heavy workload for a single machine that drove
+to major scalability issues.
+
+These two crucial limitations of MapReduce led to a total re-design of
+Hadoop. Since Hadoop 2.0 there is a resource management layer, YARN --
+\emph{Yet Another Resource Negotiator} which will be analyzed in
+section \ref{ssec:yarn} and MapReduce is just another application
+running on a cluster of physical machines.
