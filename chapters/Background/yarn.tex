@@ -21,7 +21,7 @@ The new architecture of Hadoop 2.x separates the resource management
 functions from the programming model. It delegates the
 intra-application communication and the tracking of the execution flow
 to per-job components. That unlocks great performance improvements,
-improves scalability and enables a wide variery of frameworks to share
+improves scalability and enables a wide variety of frameworks to share
 the cluster resources in a very gentle way.
 
 YARN uses three main components to provide a scalable and fault
@@ -30,7 +30,7 @@ tolerant resource management platform. The first component is the
 usage and node liveness and schedules jobs on the cluster. The second
 component is a per-node \emph{NodeManager} (NM) which is responsible
 for monitoring resource availability on the specific node, reporting
-faults to RM and managing container lifecycle. Finally, there is the
+faults to RM and managing container life-cycle. Finally, there is the
 \emph{ApplicationMaster} (AM) which coordinates the logical plan of a
 single job, manages the physical resources offered by the RM and
 tracks the execution of the job. A high level overview of YARN
@@ -66,7 +66,7 @@ in Figure \ref{fig:yarn_RM_components}.
 \centering
 \includegraphics[scale=0.5]{resources/images/Background/RM_components.png}
 \label{fig:yarn_RM_components}
-\caption{ResourceManager components}
+\caption{ResourceManager components \cite{Murthy:2014:AHY:2636998}}
 \end{figure}
 
 The \emph{ApplicationMasterService} is responsible for receiving and
@@ -79,7 +79,7 @@ mechanism for efficiently serializing data. The heartbeat mechanism
 serves both as a scalable way for the RM and AM to communicate, but
 also for the RM to track the liveness of AMs. \emph{ResourceRequests}
 contain information such as the resources per container in terms of
-virual cores and memory, the number of containers, locality
+virtual cores and memory, the number of containers, locality
 preferences and priority of requests. The scheduler then tracks,
 updates and satisfies these requests with available resources in the
 cluster. The RM builds the view of the cluster with the available
@@ -89,10 +89,60 @@ responds back to AM with the allocated containers along with
 credentials that grant access to them. The RM also keeps track of the
 AM health through the heartbeats received. The component that handle
 the liveness property of every AM is the \emph{AMLivenessMonitor}. In
-case of a missed heartbeat, then that particular AM is deemed dead and
+case of a missed heartbeat, that particular AM is deemed dead and
 is expired by the RM. All the containers that were allocated for
 that AM are marked as dead and the RM reschedules the same application
 (ApplicationMaster) on a new container.
+
+As I have previously mentioned, the RM builds its view of the cluster
+by the information that NMs send to it. The
+\emph{ResourceTrackerService} component is responsible for handling such RPCs
+and forwarding them to the appropriate modules. Before a new node in the
+cluster is able to execute YARN jobs, it should first register itself
+with the RM through the ResourceTrackerService and exchange some
+security tokens. A heartbeat mechanism is also used in this place to
+ensure the liveness of NMs and to receive updated information about
+the available resources in the physical machine. The newly received
+information about the available resources on that node is forwarded to the YARN
+scheduler so it can make scheduling decisions. Also, a received
+heartbeat is forwarded to the \emph{NMLivelinessMonitor} module which
+keeps track of the health of NMs. If RM has not received any heartbeat
+from a NM after a configurable timeout, then it is deemed dead and is
+expired. All the containers that were currently running on that node
+are also marked as dead and an event is sent to the scheduling module
+not to schedule any job on that node. When the node restarts, it
+registers again with the RM and it makes itself available for
+scheduling again.
+
+At the core of RM is the \emph{YarnScheduler} that is responsible of
+making scheduling decisions based on the available resources on the
+cluster and the resource requests issued by the AMs. Currently the
+resource requirements of an AM are limited to the number of virtual
+cores and to the amount of memory a container should
+have. YarnScheduler is a pluggable module and at the time of writing
+there are three different options. The first and original option is
+the \emph{FIFO Scheduler} where jobs are served in a simple
+first-in-first-out order with no sense of priorities. The second
+scheduling policy is the \emph{Capacity Scheduler}
+\cite{capacity_scheduler} developed by Yahoo! Capacity Scheduler
+is primarily built for large clusters with resources that are shared
+among different units in the same organization. There are different
+queues serving jobs for various units while guaranteeing some minimum
+capacity for each queue. Any excess capacity can be temporarily
+allocated to other queues and a job with high priority will be executed
+before any other job with lower priority. If a job cannot be scheduled
+in its respective queue due to lack of resources and that queue is
+below its fair share, then jobs in other queues can be preempted. Last
+but not least is the \emph{Fair Scheduler} \cite{fair_scheduler}
+developed by Facebook. In Fair Scheduler every application belongs to
+a queue, by default the ``default'' queue. The basic idea is that
+containers are allocated to the application with the fewer resources
+assigned within the queue, providing a uniform distribution of the
+available cluster resources in the long run. There can be multiple
+queue with support for priorities, minimum and maximum shares and FIFO
+ordering within the queue. Similar to Capacity Scheduler, Fair Scheduler
+also has support for preemption of containers that are already
+assigned. Currently the default scheduler for Hadoop is the Capacity Scheduler.
 
 \subsubsection{ApplicationMaster}
 \label{sssec:am}
