@@ -146,7 +146,42 @@ assigned. Currently the default scheduler for Hadoop is the Capacity Scheduler.
 
 \subsubsection{ApplicationMaster}
 \label{sssec:am}
-ApplicationMaster stuff...
+Upon a successful submission of an application to RM, the latter
+creates a special container in a node called
+\emph{ApplicationMaster}. AM is a per-application process that
+coordinates the execution plan of the application, negotiates
+resources with the RM and monitors the assigned containers. AM
+periodically heartbeats RM, default value is 10 minutes, to prove it
+is alive and to dynamically request more resources or release
+some. When AM is launched, it will compute the necessary requirements
+and locality preferences, encode them and through the heartbeat
+mechanism send them to RM. RM depending on the scheduling decisions it
+has made it might respond back with any empty response or with
+\emph{container leases} on different nodes. AM will contact the
+respective NodeManagers, present them the leases and the NM will
+create the containers. Afterwards, it (AM) is responsible to monitor the liveness
+of the containers or implement any recovery functions. An overview of
+the workflow explained above is illustrated in Figure \ref{fig:yarn_am_rm_interaction}.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.6]{resources/images/Background/AM_RM_interaction.png}
+\label{fig:yarn_am_rm_interaction}
+\caption{ApplicationMaster interaction \cite{Murthy:2014:AHY:2636998}}
+\end{figure}
+
+Since a key requirement for YARN was to decouple the programming model
+from the resource management, AM is not tightly connected to YARN.
+Writing an ApplicationMaster process is not an easy task but Hadoop
+offers some APIs to avoid the complexity of low-level protocols.
+Users can write their own ApplicationMaster
+process fitting particular needs of making local optimizations with
+the containers allocated by the RM, monitoring the containers,
+define the recovery procedures when a container dies or capture the
+exit status of a finished task. That opened the road for a plethora
+of applications to run on Hadoop such as Apache Spark
+\cite{apache_spark}, Apache Flink \cite{apache_flink}, Apache Hadoop
+MapReduce \cite{apache_hadoop} etc.
 
 \subsubsection{NodeManager}
 \label{sssec:nm}
