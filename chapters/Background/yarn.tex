@@ -185,8 +185,108 @@ MapReduce \cite{apache_hadoop} etc.
 
 \subsubsection{NodeManager}
 \label{sssec:nm}
-NodeManager stuff...
+The \emph{NodeManager} is the ``worker'' daemon that runs on every
+physical node of a Hadoop cluster. It is responsible for monitoring
+the health of the physical hardware, authenticating the container
+leases, preparing, monitoring and tearing down the container and
+providing a set of services to the application.
 
-\subsubsection{YARN HA \& fault tolerance}
+When a node joins a cluster, the NM should register with the
+RM. It will present the total amount of virtual cores and memory
+available in this machine, some security tokens required to
+authenticate the container leases, some communication ports etc. From
+that point NM should periodically heartbeat the RM, default value is 1
+second, proving that is still alive and keeping the RM up-to-date with
+its status. NM regularly runs some monitoring scripts for the
+health of the machine and the status is sent to RM. As a response it
+might get back a list of container leases or some instructions such as
+node decommission because of unhealthy node or to kill some
+containers. In case of a missed heartbeat, the RM declares the NM as
+dead, excludes that node from its pool of resources and informs all
+running AMs about the failed NM. AM is responsible to react to such a
+failure and possibly ask resources from RM to redo the work done in
+the failed node.
+
+Each container in YARN comes along with a \emph{container launch
+  context} (CLC). The CLC contains information specific to the
+application that is about to run such as environment variables,
+dependencies stored in HDFS or on-line, security tokens, commands that
+actually spawn the application etc. Once the NM has validated the
+container lease with the security tokens provided, it should
+initialize the container by fetching the requested dependencies,
+setting the variables and of course run the commands specified by the
+CLC. At the end of the container life-cycle or if the container dies
+or if RM instructs NM to kill a container, NM should garbage collect
+any dependency fetched during initialization and not used any
+longer by other containers in that node. For the whole duration of a
+container's life-cycle, NM monitors its utilization. If a container's
+usage exceeds its assigned, then the NM signals the container to be
+killed so that it does not disrupt the work of other containers
+sharing the same physical machine. 
+
+Finally, NM provides some services to the containers such as log
+aggregation that will upload anything written to \texttt{stdout} or \texttt{stderr} to
+HDFS when the application finishes. NM also provides a set of
+auxiliary, pluggable services that are used by some applications. For
+example, in MapReduce the intermediate output of the Map phase should
+not be garbage collected after the container has finished. The
+service will flag these data to be persisted even after the container
+has gracefully exit.
+
+\subsubsection{YARN fault tolerance \& HA}
 \label{sssec:yarn_ha}
-YARN HA and fault tolerance stuff...
+So far we have gone through some key points of the resource management
+platform of Hadoop. RM is the central authority that makes scheduling
+decisions and carries all the burden of monitoring both the AMs and
+the NMs. Although from the beginning Hadoop was designed to run on
+commodity hardware were machine failures are the norm, a
+ResourceManager failure would drove the whole cluster
+useless. Moreover, after a RM restart, it had to kill all the
+containers running on the cluster including the ApplicationMasters and
+launch new instances of them. Since RM is not responsible for the
+recovery of the applications AMs had to start over the jobs, unless if
+they had some recovery policy. Hadoop 2.4 introduced some kind of recovery mechanism that would
+recover some application metadata and re-submit only the non-finished
+applications in a way invisible to the user. As of Hadoop 2.6 RM
+restart has further improved. The rest of this section will briefly
+explain the recovery and HA mechanism of the RM.
+
+To recover from a failure, RM needs to
+store some state in a persistent storage. Currently there is support
+for three alternatives. The first one is to use the Apache ZooKeeper
+\cite{apache_zookeeper}, a service that provides highly reliable
+distributed coordination, naming, storing and group membership
+services. The second alternative is LevelDB \cite{google_leveldb},
+a light-weight key-value store and finally the local file system or
+HDFS. The default state store is the file system, local or HDFS, although
+if a requirement of our cluster is also HA, then Apache ZooKeeper is
+the preferred one. To begin with, RM store some application metadata to
+the persistent storage solution. These metadata include the
+application submission context, the final status of the application,
+diagnostics of the application and some security related
+tokens. Moreover, when the RM restarts it will ask from all the NMs in
+the cluster to re-sync and send back information about all the
+containers that are currently running. Using that information it can
+recover the whole state of the scheduler such as resource requests,
+queues' usage etc. That way RM does not need to kill and kick-off again all
+the running applications, just instruct the respective AMs to re-sync
+with it.
+
+Even with the aforementioned mechanism RM is a single point of
+failure. In case of an RM crash, the cluster would be useless until
+the RM restarts and recover. This period, depending on the number of
+nodes on the cluster, the number of applications running and the
+policies to detect a dead machine, might take quite a long time. As of
+Hadoop 2.4 there is a High Availability feature for the RM, using an
+Active/Standby architecture and a ZooKeeper instance to coordinate
+the RM nodes. ZooKeeper
+ensures that at any point of time there is only one Active node that
+performs all the work. In case of a crash, a new leader is elected
+from the Standby pool and is promoted to Active. The transition from
+Standby to Active can be done either manually through the administration
+CLI or automatically where ZooKeeper will detect the crashed node and
+elect a new leader. The new Active RM will build the current state
+from the state stored in ZooKeeper. AMs and NMs will keep contacting
+the crashed, previously Active, RM until they realize it is dead. Then
+they will contact the next RM in their configuration list until they
+hit the currently Active node in a round-robin fashion.
