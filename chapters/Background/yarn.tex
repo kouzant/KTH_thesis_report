@@ -239,12 +239,12 @@ So far we have gone through some key points of the resource management
 platform of Hadoop. RM is the central authority that makes scheduling
 decisions and carries all the burden of monitoring both the AMs and
 the NMs. Although from the beginning Hadoop was designed to run on
-commodity hardware were machine failures are the norm, a
+commodity hardware where machine failures are the norm, a
 ResourceManager failure would drove the whole cluster
 useless. Moreover, after a RM restart, it had to kill all the
 containers running on the cluster including the ApplicationMasters and
 launch new instances of them. Since RM is not responsible for the
-recovery of the applications AMs had to start over the jobs, unless if
+recovery of the applications AMs had to start over the tasks, unless if
 they had some recovery policy. Hadoop 2.4 introduced some kind of recovery mechanism that would
 recover some application metadata and re-submit only the non-finished
 applications in a way invisible to the user. As of Hadoop 2.6 RM
@@ -254,13 +254,13 @@ explain the recovery and HA mechanism of the RM.
 To recover from a failure, RM needs to
 store some state in a persistent storage. Currently there is support
 for three alternatives. The first one is to use the Apache ZooKeeper
-\cite{apache_zookeeper}, a service that provides highly reliable
+\cite{Hunt:2010:ZWC:1855840.1855851}, a service that provides highly reliable
 distributed coordination, naming, storing and group membership
 services. The second alternative is LevelDB \cite{google_leveldb},
 a light-weight key-value store and finally the local file system or
 HDFS. The default state store is the file system, local or HDFS, although
 if a requirement of our cluster is also HA, then Apache ZooKeeper is
-the preferred one. To begin with, RM store some application metadata to
+the preferred one. To begin with, RM stores some application metadata to
 the persistent storage solution. These metadata include the
 application submission context, the final status of the application,
 diagnostics of the application and some security related
@@ -273,7 +273,7 @@ the running applications, just instruct the respective AMs to re-sync
 with it.
 
 Even with the aforementioned mechanism RM is a single point of
-failure. In case of an RM crash, the cluster would be useless until
+failure. In case of an RM crash, the cluster would be essentially useless until
 the RM restarts and recover. This period, depending on the number of
 nodes on the cluster, the number of applications running and the
 policies to detect a dead machine, might take quite a long time. As of
@@ -281,7 +281,7 @@ Hadoop 2.4 there is a High Availability feature for the RM, using an
 Active/Standby architecture and a ZooKeeper instance to coordinate
 the RM nodes. ZooKeeper
 ensures that at any point of time there is only one Active node that
-performs all the work. In case of a crash, a new leader is elected
+performs all the scheduling decisions and monitoring operations. In case of a crash, a new leader is elected
 from the Standby pool and is promoted to Active. The transition from
 Standby to Active can be done either manually through the administration
 CLI or automatically where ZooKeeper will detect the crashed node and
