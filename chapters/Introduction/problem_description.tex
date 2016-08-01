@@ -14,9 +14,9 @@ schedule the jobs accordingly. The view of the cluster from the
 \emph{scheduler} perspective is updated frequently with the new
 cluster utilization.
 
-This project is a work on Hops \footnote{http://www.hops.io/} platform
-and more specifically on HopsYarn, which is a modified version of
-Apache YARN \cite{Vavilapalli:2013:AHY:2523616.2523633}. In YARN the
+This project is a work on Hops \cite{hops} platform
+and more specifically on Hops-YARN, which is a modified version of
+Apache Hadoop YARN \cite{Vavilapalli:2013:AHY:2523616.2523633}. In YARN the
 entity which is responsible for keeping an updated version of the
 cluster utilization and scheduling tasks is the \emph{Resource
 Manager} (RM). The view of RM regarding the available resources on the
@@ -44,7 +44,7 @@ and also make scheduling decisions.
 
 In Hops in order to improve performance and HA of the RM we have introduced an
 in-memory distributed MySQL database which stores all the necessary
-metadata. One great feature of HopsYarn is that the
+metadata. One great feature of Hops-YARN is that the
 \emph{ResourceTrackerService} (RT) of the RM is distributed into multiple
 nodes in the cluster. That service is responsible for receiving and handling
 heartbeats from the NMs. That way each instance handles only a portion of the total NM
@@ -55,10 +55,10 @@ of the system while decreasing the load of the master RM which can
 perform the rest of the operations without the load of handling every
 single heartbeat.
 
-Another equally important feature of HopsYarn is that RM stores
+Another equally important feature of Hops-YARN is that RM stores
 every event received and any scheduling decision into the MySQL
 cluster. That makes our solution highly available with minimum
 failover period. When a RM instance fails it re-builds the view of the
 cluster by reading the latest state from the database. More details on
-the architecture of both YARN and HopsYarn will be given in Chapter
+the architecture of both YARN and Hops-YARN will be given in Chapter
 \ref{chap:background} and \ref{chap:analysis}.
