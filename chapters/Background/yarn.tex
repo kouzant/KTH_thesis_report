@@ -64,7 +64,7 @@ in Figure \ref{fig:yarn_RM_components}.
 
 \begin{figure}
 \centering
-\includegraphics[scale=0.5]{resources/images/Background/RM_components.png}
+\includegraphics[scale=0.6]{resources/images/Background/RM_components.png}
 \label{fig:yarn_RM_components}
 \caption{ResourceManager components \cite{Murthy:2014:AHY:2636998}}
 \end{figure}
@@ -239,7 +239,8 @@ So far we have gone through some key points of the resource management
 platform of Hadoop. RM is the central authority that makes scheduling
 decisions and carries all the burden of monitoring both the AMs and
 the NMs. Although from the beginning Hadoop was designed to run on
-commodity hardware where machine failures are the norm, a
+commodity hardware where machine failures are the norm
+\cite{doi:10.2200/S00516ED2V01Y201306CAC024, Dean:2013:TS:2408776.2408794}, a
 ResourceManager failure would drove the whole cluster
 useless. Moreover, after a RM restart, it had to kill all the
 containers running on the cluster including the ApplicationMasters and

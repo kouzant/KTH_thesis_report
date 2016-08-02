@@ -76,4 +76,12 @@ database and through the event API of NDB is streamed to the Active
 RM to update its view of the cluster. In that case, NDB serves as a
 communication channel between the RT and the RM. With that
 architecture the load of tracking 5000 nodes is distributed among all
-the RMs in the cluster.
+the RMs in the cluster. An overview of Hops-YARN distributed
+ResourceManager is illustrated in Figure \ref{fig:hopsyarn_dist_rm}.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{resources/images/Background/hopsyarn_arch_overview.png}
+\label{fig:hopsyarn_dist_rm}
+\caption{Hops-YARN distributed RM architecture}
+\end{figure}
