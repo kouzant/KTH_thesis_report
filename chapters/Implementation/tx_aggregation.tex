@@ -1,2 +1,138 @@
-Analyze the tx aggregation mechanism
-TCP-like aggregation policy
+In this section I will present the new architecture of the Transaction
+State manager of Hops-YARN. A \emph{Transaction State} in Hops-YARN is
+an object that holds all the information that should be persisted in
+the database back-end in a consistent way. Updates in the RM state are
+generated either from heartbeats received from NMs and AMs or from
+events that are streamed from the NDB event API (see Section
+\ref{ssec:hops_yarn_load_balance}). Every modification in the
+scheduler state should be reflected with updates in the corresponding
+tables in NDB. Such modifications include:
+\begin{itemize}
+\item New applications that have been issued to the scheduler through
+YARN client. This include name of the application, user of
+application, the Application Submission Context, state etc.
+
+\item New application attempts including reference to AM, some
+diagnostics, list of nodes that the containers of this application run
+etc.
+
+\item Newly created containers that applications will use
+
+\item Containers that have finished their job and should be removed
+from scheduler's state
+
+\item Containers that have updated their state for some reason etc.
+
+\item Newly added nodes in the cluster
+\end{itemize}
+
+For the full list of the modifications tracked, the curious reader
+should look on \texttt{TransactionStateImpl.java}
+\footnote{\url{https://goo.gl/Ukq4Tp}} file.
+
+It is important that the state persisted in the database reflects the
+state of the ResourceManager in memory. In case of a recovery, the
+state recovered should be the last known state and be consistent. An
+example of inconsistency would be a container to be listed as running
+even though the application that was using it has finished. In order to
+avoid such situations and achieve the consistency level we desire
+there is the notion of Transaction State (TS). A TS is committed in an
+``atomic'' fashion. This is facilitated by the transactional nature of
+MySQL Cluster, so a commit of one TS is one ``big'' SQL
+transaction. Using transactions we achieve isolation and atomicity of
+our Hops TS. With the all-or-nothing architecture of transactions, if
+the RM crashes in the middle of a commit, then the whole TS will be
+aborted. Similarly, in case of an error during the commit phase it will
+roll-back the whole transaction leaving the database in a clean state.
+More information regarding how a TS is created is presented in Section
+\ref{ssec:impl_batch_system}. Having our safety property covered, one
+more reason to use Transaction States is for efficiency. Committing a
+single Transaction State with a lot of modifications is more efficient
+than committing small modifications several times.
+
+The Transaction State is implemented generally with concurrent hash maps and
+accessors in the style of \texttt{add*ToAdd} for entries that we
+want to persist in the database and \texttt{add*ToRemove} for entries
+that we want to delete from the database. Even inside a TS we should
+be very careful on how we access the fields. A TS holds modifications
+from several RPC requests that may modify the same element. For
+example one RPC might create a new container and the next one to
+destroy it. YARN internals are event-based. So there is no guarantee
+about the order that events will be processed. The second RPC might
+follow a different code path and finish earlier than the first one. In
+that case what will be persisted in the database would be the creation
+of a new container, something completely wrong. That is the reason
+we hold two separate data structures for the same table, one for
+insert operations and another for delete operations. First the insert
+data structure is processed that persists entries in the database and
+then the delete data structure.
+
+In Section \ref{ssec:impl_batch_system} I will give some insights on
+the existing batching system while on Section
+\ref{ssec:impl_aggr_mechanism} I will explain the new queueing
+mechanism that improved the commit time.
+
+\subsection{Batching system}
+\label{ssec:impl_batch_system}
+So far we have discussed why we need the Transaction State in
+Hops-YARN and how it is implemented. We still miss the part of how
+Hops-YARN handles heartbeats or events from NDB and how the scheduler
+updates the fields in it. A TS object is managed by the
+\emph{TransactionStateManager} a custom service that runs on Hops-YARN.
+It is responsible for creating new TS, provide the
+current TS to methods that have requested it and keep track of how many
+RPCs have requested the TS.
+
+Heartbeats from AMs and NMs from the side of RM are percieved as
+RPCs. Upon an RPC, the method will ask for the TransactionStateManager
+to provide the current TS. The TS will be piggybacked to every event
+triggered by RM components and ``travel'' all the way until that
+request has been fully handled. Each modification made by the components
+to the state of the RM will also be added to the insert and delete
+data structures explained above. TransactionStateManager service
+provides isolation by batching several RPC requests together, let the
+requests be handled and then batch the next RPCs in a different
+TS. The activity diagram of the batching system is depicted in Figure
+\ref{fig:impl_rpc_batch_system}.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.3]{resources/images/Implementation/rpc_batch_system_activity.png}
+\label{fig:impl_rpc_batch_system}
+\caption{Activity diagram of RPC batching system}
+\end{figure}
+
+At the beginning the TransactionStateManager service creates a
+Transaction State object. Heartbeats start coming from the
+ApplicationMasters and the NodeManagers in the form of RPCs. The
+methods that are invoked, get the current TS from the
+TransactionStateManager and piggyback them to the events
+triggered. The TransactionStateManager service keeps receiving RPCs
+until a certain threshold of received RPCs -- default is 60, or until
+a timeout has been reached -- default is 60 ms. At the point where
+either of two is satisfied, it blocks responding to further
+\texttt{getCurrentTransactionState} requests until all the RPCs in the
+previous batch have been handled properly and put in the queue to be
+committed in the database back-end. When this is done, it
+creates a new Transaction State object and unblocks the receiving of
+new RPCs. At the same time but in a \textbf{different thread}, the previous
+Transaction State is committed to the database as described in Section
+\ref{ssec:impl_aggr_mechanism}.
+
+In Hops-YARN we have distributed the \emph{ResourceTrackingService} to
+multiple machines in the cluster. They receive heartbeats from the
+NodeManagers and persist them in NDB. MySQL Cluster has an event API
+that can stream events to subscribers. In RM there is a custom C++
+library that receives the events emitted from NDB, creates a Java
+representation of them and put them in FIFO queue. In the background
+there is a Hops service that polls from the queue and triggers the
+appropriate events. The Transaction State is also included in these
+events as the cascading modifications should be persisted in the
+database. The same Transaction State manager service is used as
+described in the previous paragraph, so from the manager's perspective
+there is no difference between RPC events and NDB events.
+
+\subsection{Aggregation mechanism}
+\label{ssec:impl_aggr_mechanism}
+First describe how the manager worked before and then analyze the new
+aggregation mechanism
