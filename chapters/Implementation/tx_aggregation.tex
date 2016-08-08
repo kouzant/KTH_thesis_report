@@ -85,7 +85,7 @@ current TS to methods that have requested it and keep track of how many
 RPCs have requested the TS.
 
 Heartbeats from AMs and NMs from the side of RM are percieved as
-RPCs. Upon an RPC, the method will ask for the TransactionStateManager
+RPCs. Upon an RPC, the method invoked will ask for the TransactionStateManager
 to provide the current TS. The TS will be piggybacked to every event
 triggered by RM components and ``travel'' all the way until that
 request has been fully handled. Each modification made by the components
@@ -98,7 +98,7 @@ TS. The activity diagram of the batching system is depicted in Figure
 
 \begin{figure}
 \centering
-\includegraphics[scale=0.3]{resources/images/Implementation/rpc_batch_system_activity.png}
+\includegraphics[scale=0.4]{resources/images/Implementation/rpc_batch_system_activity.png}
 \label{fig:impl_rpc_batch_system}
 \caption{Activity diagram of RPC batching system}
 \end{figure}
@@ -108,7 +108,9 @@ Transaction State object. Heartbeats start coming from the
 ApplicationMasters and the NodeManagers in the form of RPCs. The
 methods that are invoked, get the current TS from the
 TransactionStateManager and piggyback them to the events
-triggered. The TransactionStateManager service keeps receiving RPCs
+triggered, while various RM components handle those events in separate
+threads.
+The TransactionStateManager service keeps receiving RPCs
 until a certain threshold of received RPCs -- default is 60, or until
 a timeout has been reached -- default is 60 ms. At the point where
 either of two is satisfied, it blocks responding to further
@@ -135,5 +137,69 @@ there is no difference between RPC events and NDB events.
 
 \subsection{Aggregation mechanism}
 \label{ssec:impl_aggr_mechanism}
-First describe how the manager worked before and then analyze the new
-aggregation mechanism
+Heartbeats arrive in the RM and invoke specific methods. The methods
+invoked create specific events which include the TS and are sent to an
+event dispatcher thread. The event dispatcher will forward the events
+to the appropriate RM components that will trigger some actions and
+probably create more events. All along the ``journey'' of these
+events, TS track all the necessary modifications that should be
+persisted in the database back-end. After all events in a batch have
+been properly handled they should be committed in NDB.
+
+Persisting in a non-volatile storage solution is expensive due to
+exclusive locks, OS buffers, I/O interrupts etc. On top of that, if you are
+persisting data in a remote database, then the network introduces
+latency. For that reason, when a TS is ready to be committed, it forks
+a new thread which will handle the actual database operations to
+persist its state. Having the commit mechanism parallelized, multiple
+TS can be persisted concurrently. At that point, we have just
+invalidated our consistency model. Sooner or later we will
+reach the case where two TS would be committed in the wrong order
+corrupting the state of the database. The mechanism explained in
+Section \ref{sssec:impl_aggr_old} controls the commit phase of each TS
+guaranting that two conflicting TS will be committed in the correct
+order. In Section \ref{sssec:impl_aggr_new} I will outline the
+shortcomings of the existing mechanism and describe the new mechanism
+I build that extends the previous.
+
+\subsubsection{One TS per commit}
+\label{sssec:impl_aggr_old}
+The mechanism that controls the commit phase of TS should allow as
+much as possible parallelism without violating our constraints. Our
+constraints are:
+\begin{itemize}
+\item If the RPCs that are batched in Transaction State $TS_0$ have
+  been fully handled before the RPCs batched in $TS_1$ and they both
+  modify the same \textbf{YARN Application}, then the commit phase of $TS_0$
+  should have been succefully completed \textbf{before} the commit
+  phase of $TS_1$
+
+\item If the RPCs that are batched in Transaction State $TS_0$ have
+  been fully handled before the RPCs batched in $TS_1$ and they both
+  modify the same \textbf{NodeManager}, then the commit phase of $TS_0$
+  should have been succefully completed \textbf{before} the commit
+  phase of $TS_1$
+
+\item If Transaction States $TS_0$ and $TS_1$ modify different YARN
+  Application \textbf{and} different NodeManager then they can be committed in parallel
+\end{itemize}
+
+Every TS keeps a list with the IDs of the applications it modifies and
+a list with the IDs of the nodes it modifies. In the commit mechanism,
+there is a FIFO queue for each and every application ID and node
+ID. Before committing a TS, the mechanism puts it in the corresponding
+queues both for the applications and the nodes it modifies. Then it
+gets the IDs of the applications and nodes it modified. In order for
+the TS to be committed, it should be in the \textbf{head} of the
+queues for the corresponding application IDs \textbf{and} node IDs. If
+it is not in the head of one application or node queue, it means that
+a previous TS modified the same application or node and should be
+committed before. The un-committed TS is put in a queue to be
+examined later.
+
+
+*** Give an example with Figures about the queue system
+
+\subsubsection{Multiple TS per commit}
+\label{sssec:impl_aggr_new}
+New commit mechanism
