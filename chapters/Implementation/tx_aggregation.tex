@@ -9,8 +9,9 @@ scheduler state should be reflected with updates in the corresponding
 tables in NDB. Such modifications include:
 \begin{itemize}
 \item New applications that have been issued to the scheduler through
-YARN client. This include name of the application, user of
-application, the Application Submission Context, state etc.
+the YARN client. This include name of the application, user of
+the application, the Application Submission Context, state of the
+application etc.
 
 \item New application attempts including reference to AM, some
 diagnostics, list of nodes that the containers of this application run
@@ -26,8 +27,8 @@ from scheduler's state
 \item Newly added nodes in the cluster
 \end{itemize}
 
-For the full list of the modifications tracked, the curious reader
-should look on \texttt{TransactionStateImpl.java}
+For the full list of the modifications tracked and persisted in NDB,
+consult \texttt{TransactionStateImpl.java}
 \footnote{\url{https://goo.gl/Ukq4Tp}} file.
 
 It is important that the state persisted in the database reflects the
