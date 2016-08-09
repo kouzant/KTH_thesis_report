@@ -197,8 +197,45 @@ a previous TS modified the same application or node and should be
 committed before. The un-committed TS is put in a queue to be
 examined later.
 
+To make it more clear, I will give an example of the commit mechanism
+works. To make it easier, I assume that our only lock is on
+application IDs.
 
-*** Give an example with Figures about the queue system
+\begin{figure}
+  \centering
+  \begin{subfigure}[t]{0.3\textwidth}
+    \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_0.png}
+    \label{fig:impl_tx_aggr_sub0}
+    \caption{}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.3\textwidth}
+    \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_1.png}
+    \label{fig:impl_tx_aggr_sub1}
+    \caption{}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[t]{0.3\textwidth}
+    \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_2.png}
+    \label{fig:impl_tx_aggr_sub2}
+    \caption{}
+  \end{subfigure}
+  \\[2em]
+  \begin{subfigure}[t]{0.3\textwidth}
+    \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_3.png}
+    \label{fig:impl_tx_aggr_sub3}
+    \caption{}
+  \end{subfigure}
+  \qquad
+  \begin{subfigure}[t]{0.3\textwidth}
+    \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_4.png}
+    \label{fig:impl_tx_aggr_sub4}
+    \caption{}
+  \end{subfigure}
+
+  \label{fig:impl_tx_aggr_queue}
+  \caption{Example of TS for the queue to be committed}
+\end{figure}
 
 \subsubsection{Multiple TS per commit}
 \label{sssec:impl_aggr_new}
