@@ -277,4 +277,17 @@ completes its transaction, removed from the queues and now
 
 \subsubsection{Multiple TS per commit}
 \label{sssec:impl_aggr_new}
-New commit mechanism
+The existing mechanism described in the section above provided the
+consistency model that we required and parallelism for
+non-conflicting TSs. The major issue that had to be addressed was that
+for conflicting TSs $(1)$ they had to wait in the queue for another TS
+to finish, in the example above \texttt{TS\_1} and \texttt{TS\_2} and
+$(2)$ for every transaction committed we paid the network latency
+penalty and the time probably to acquire locks etc. In order to solve
+the first problem we examined different solutions. First I tried to
+make a more fine-grained lock. Instead of locking on application and
+node IDs, try to lock for containers. Although this solution whould
+increase parallelism, it was very risky that we would end-up with a
+corrupted state. Next solution was to remove the system with the
+queues and replace it with exclusive reentrant locks. The expected
+result was to increase performance but at the end it was the same.
