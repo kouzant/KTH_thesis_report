@@ -197,44 +197,82 @@ a previous TS modified the same application or node and should be
 committed before. The un-committed TS is put in a queue to be
 examined later.
 
-To make it more clear, I will give an example of the commit mechanism
+To make it more clear, I will give an example of how the commit mechanism
 works. To make it easier, I assume that our only lock is on
-application IDs.
+application IDs and we have only three applications running. The FIFO
+queues for the applications are depicted in Figure
+\ref{fig:impl_tx_aggr_queue}. The initial state of the system is in
+Figure \ref{fig:impl_tx_aggr_sub0} where no TS has been handled yet
+and the queues are empty. Technically, the queues for the application
+IDs and node IDs are created lazily when the TS has been fully handled
+and is ready to be committed. RPCs for \texttt{TS\_0} have been
+handled and is ready to be committed in the database. It modifies
+entries for applications with ID \texttt{app\_0} and \texttt{app\_2},
+so it is placed in the respective queues, Figure
+\ref{fig:impl_tx_aggr_sub1}. \texttt{TS\_0} is the head
+of the queues for the applications it modifies so it can start the
+commit phase. Since a commit phase may fail and roll-back, it will be
+removed from the queues when the transaction has been succefully
+completed.
+
+While \texttt{TS\_0} tries to persist its modifications to the
+database, two more Transaction States have finished and are put in the
+queue to be committed, Figure
+\ref{fig:impl_tx_aggr_sub2}. \texttt{TS\_1} modifies applications
+\texttt{app\_0} and \texttt{app\_1} while \texttt{TS\_2} modifies
+applications \texttt{app\_1} and \texttt{app\_2}. The commit mechanism
+checks whether \texttt{TS\_1} can be committed. Remember that
+\texttt{TS\_0} is still committing to the database. The mechanism
+fetches the applications that \texttt{TS\_1} modifies and checks if it
+is the head in each queue. For \texttt{app\_1} it is in the head of
+the queue but not for \texttt{app\_0}, \texttt{TS\_0} should finish
+first. So it will be examined after \texttt{TS\_0} is done. The same
+applies for \texttt{TS\_2}.
+
+\texttt{TS\_0} is now complete and removed from the queues of the
+applications it modified, Figure
+\ref{fig:impl_tx_aggr_sub3}. \texttt{TS\_1} is now the head for
+\texttt{app\_0} and \texttt{app\_1} so it starts the commit
+phase. This is not the case though for \texttt{TS\_2} which still has
+to wait for \texttt{TS\_1} to finish. \texttt{TS\_1} successfuly
+completes its transaction, removed from the queues and now
+\texttt{TS\_2} is in the head position, Figure
+\ref{fig:impl_tx_aggr_sub4} so it can start committing to the database.
 
 \begin{figure}
   \centering
   \begin{subfigure}[t]{0.3\textwidth}
     \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_0.png}
-    \label{fig:impl_tx_aggr_sub0}
     \caption{}
+    \label{fig:impl_tx_aggr_sub0}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.3\textwidth}
     \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_1.png}
-    \label{fig:impl_tx_aggr_sub1}
     \caption{}
+    \label{fig:impl_tx_aggr_sub1}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.3\textwidth}
     \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_2.png}
-    \label{fig:impl_tx_aggr_sub2}
     \caption{}
+    \label{fig:impl_tx_aggr_sub2}
   \end{subfigure}
   \\[2em]
   \begin{subfigure}[t]{0.3\textwidth}
     \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_3.png}
-    \label{fig:impl_tx_aggr_sub3}
     \caption{}
+    \label{fig:impl_tx_aggr_sub3}
   \end{subfigure}
   \qquad
   \begin{subfigure}[t]{0.3\textwidth}
     \includegraphics[scale=0.4]{resources/images/Implementation/commit_system_4.png}
-    \label{fig:impl_tx_aggr_sub4}
     \caption{}
+    \label{fig:impl_tx_aggr_sub4}
   \end{subfigure}
 
-  \label{fig:impl_tx_aggr_queue}
   \caption{Example of TS for the queue to be committed}
+  \label{fig:impl_tx_aggr_queue}
 \end{figure}
 
 \subsubsection{Multiple TS per commit}
