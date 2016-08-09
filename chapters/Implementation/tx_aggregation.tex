@@ -291,3 +291,121 @@ increase parallelism, it was very risky that we would end-up with a
 corrupted state. Next solution was to remove the system with the
 queues and replace it with exclusive reentrant locks. The expected
 result was to increase performance but at the end it was the same.
+
+The solution proposed in this section and implemented reduces both the
+wait time in the queue for a TS to be committed and the RTT for each
+transaction performed. The mechanism extends the method described in
+Section \ref{sssec:impl_aggr_old} by aggregating multiple TSs into a
+single one while it guarantees consistency. The queue system still
+gives us the proper order in which the TSs should be persisted. A TSs
+is examined if it should be persisted in the database. If it is not
+possible to be persisted due to conflicting TSs then it is put in a
+\emph{toBeAggregated} set. If it is permitted to commit, then it does so
+and construct an extended TS called
+\emph{AggregatedTransactionState}.
+
+The \emph{AggregatedTransactionState} contains TSs from the
+\emph{toBeAggregated} set that are eligible for commit according to the
+following aggregation rules:
+\begin{enumerate}
+  \item A TS was not the head in its respective queues at the time it
+    was examined for commit, but until now the conflicting TS(s) have
+    been committed and removed. So now it is in the head of the
+    queues.
+
+  \item A TS is still not in the head of the queues, but the
+    conflicting TSs that should be committed before, have been already
+    aggregated in the \emph{AggregatedTransactionState}.
+\end{enumerate}
+
+The first case is trivial and we have examined it in the previous
+section. For the second case, the mechanism gets the modified
+application and node IDs from a Transaction State \texttt{TS\_a}.
+Then it retrieves all the conflicting TSs from the appropriate queues
+that are blocking \texttt{TS\_a} from being committed. If all of the
+conflicting TSs have already been aggregated -- put in the
+\emph{AggregatedTransactionState}, then the mechanism aggregates
+\texttt{TS\_a} as well and it proceeds by examining the next TS in the
+\emph{toBeAggregated} set. At the end of this process we will end-up
+with a ``big'' Transaction State, the
+\emph{AggregatedTransactionState} that will be committed in the
+database. The \emph{AggregatedTransactionState} class actually extends
+the \emph{TransactionState} class and for every TS that is aggregated
+it updates the data structures with the modifications of the TS. The
+\emph{toBeAggregated} data structure is a FIFO queue so the TSs that
+are examined for aggregation are kept in the correct order. At the
+end of the aggregation process, the data structures of the
+AggregatedTransactionState hold the correct, most recent modifications to be persisted.
+
+Consider the state of the queues as in Figure
+\ref{fig:impl_tx_aggr_sub2}. Both \texttt{TS\_1} and \texttt{TS\_2}
+cannot be committed because they are blocked by \texttt{TS\_0} so they
+are added to the \emph{toBeAggregated} queue. At some
+point \texttt{TS\_0} is committed in the database, removed from the
+queues as in Figure \ref{fig:impl_tx_aggr_sub3}, creates the
+\emph{AggregatedTransactionState} (ATS)
+and starts the aggregation process. \texttt{TS\_1} is the first
+candidate for aggregation. At that point \texttt{TS\_1} is at the head
+of its respective queues and following the aggregation rule $1$ it is
+aggregated. All the data structures of \texttt{TS\_1} are copied to
+the data structures of the ATS. Next in the \emph{toBeAggregated} set
+is \texttt{TS\_2}. \texttt{TS\_2} is not the head in the queue for
+application \texttt{app\_1} but the conflicting TS, \texttt{TS\_1} has
+already been aggregated. So according to aggregation rule $2$,
+\texttt{TS\_2} is also aggregated, probably updating the values that
+\texttt{TS\_1} has put in TSA. The \emph{toBeAggregated} set is now
+empty and the ``big'' AggregatedTransactionState is committed to the
+database. Compared to the existing commit mechanism, where we have
+done three commits in the database, we have now reduced it to two.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.5]{resources/images/Implementation/commit_system_aggr_example.png}
+\caption{Aggregate commit mechanism example}
+\label{fig:impl_tx_aggr_example}
+\end{figure}
+
+Another example that demonstrates the improvement we have achieved is
+described in the following paragraph. Consider the locking queues as
+depicted in Figure \ref{fig:impl_tx_aggr_example} for two applications. All the Transaction
+States are blocked behind \texttt{TS\_0} which is at the commit
+phase. At that time the \emph{toBeAggregated} set contains
+\texttt{TS\_1}-\texttt{TS\_5}. \texttt{TS\_0} finishes its commit phase, removes
+itself from the locking queues and begins the aggregation phase. First
+it examines \texttt{TS\_1}. It is in the head of the queue for
+application \texttt{app\_0} and according to aggregation rule $1$ it
+should be aggregated. Next in the \emph{toBeAggregated} set is
+\texttt{TS\_2}. The conflicting state is \texttt{TS\_1}, which is
+already aggregated so according to aggregation rule $2$ it is
+aggregated too. \texttt{TS\_3} is in the head of the queue for
+\texttt{app\_1} and all the conflicting TSs for \texttt{app\_0} have
+been aggregated so it is also put in the
+\emph{AggregatedTransactionState}. Similarly, \texttt{TS\_4} and
+\texttt{TS\_5} are also aggregated. Now the
+\emph{AggregatedTransactionState} contains the modifications of
+\texttt{TS\_1}, \texttt{TS\_2}, \texttt{TS\_3}, \texttt{TS\_4},
+\texttt{TS\_5} and begins the commit phase. With the previous commit
+mechanism, every TS would have performed the commit phase individually introducing
+considerable delay due to the RTT to the database, whereas with the
+new commit mechanism we only require two commits in the database.
+
+Aggregating several TSs into a single one introduced some erroneous
+behaviour. NDB is very performant with transactions of small size but
+the aggregation mechanism was overloading the transaction and NDB was
+throwing errors. In order to mitigate this issue a TCP-like aggregation control
+was put in place. In the beginning, the mechanism starts to aggregate
+a small number of TSs. When the commit phase for that
+\emph{AggregatedTransactionState} is successfully completed, the limit
+is increased by some delta. It continues to increase until an error
+message is received from the database. The transaction is rolled-back,
+the limit for the number of aggregations is set to minimum and the
+mechanism tries again to aggregate. Users can implement their own
+policy as it fits their needs without having to change the commit
+mechanism code.
+
+Overall, the new commit mechanism addresses both the waiting time in
+the queue and the communication latency. TSs do not have to wait in
+the queue for all the conflicting TSs to be committed. Once one
+conflicting TS is committed then the mechanism aggregates as many as
+possible TSs. Moreover, since multiple TSs are squashed into a single
+one, there is only one commit phase reducing a lot the network latency.
