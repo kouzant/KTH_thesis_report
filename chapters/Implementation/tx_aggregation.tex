@@ -13,7 +13,7 @@ the YARN client. This include name of the application, user of
 the application, the Application Submission Context, state of the
 application etc.
 
-\item New application attempts including reference to AM, some
+\item New application attempts including reference to AM,
 diagnostics, list of nodes that the containers of this application run
 etc.
 
@@ -70,7 +70,7 @@ then the delete data structure.
 
 In Section \ref{ssec:impl_batch_system} I will give some insights on
 the existing batching system while on Section
-\ref{ssec:impl_aggr_mechanism} I will explain the new queueing
+\ref{ssec:impl_aggr_mechanism} I will explain the new queuing
 mechanism that improved the commit time.
 
 \subsection{Batching system}
@@ -84,7 +84,7 @@ It is responsible for creating new TS, provide the
 current TS to methods that have requested it and keep track of how many
 RPCs have requested the TS.
 
-Heartbeats from AMs and NMs from the side of RM are percieved as
+Heartbeats from AMs and NMs from the side of RM are perceived as
 RPCs. Upon an RPC, the method invoked will ask for the TransactionStateManager
 to provide the current TS. The TS will be piggybacked to every event
 triggered by RM components and ``travel'' all the way until that
@@ -148,8 +148,8 @@ been properly handled they should be committed in NDB.
 
 Persisting in a non-volatile storage solution is expensive due to
 exclusive locks, OS buffers, I/O interrupts etc. On top of that, if you are
-persisting data in a remote database, then the network introduces
-latency. For that reason, when a TS is ready to be committed, it forks
+persisting data in a remote database, then the network introduces a
+few milliseconds of latency as well. For that reason, when a TS is ready to be committed, it forks
 a new thread which will handle the actual database operations to
 persist its state. Having the commit mechanism parallelized, multiple
 TS can be persisted concurrently. At that point, we have just
@@ -157,7 +157,7 @@ invalidated our consistency model. Sooner or later we will
 reach the case where two TS would be committed in the wrong order
 corrupting the state of the database. The mechanism explained in
 Section \ref{sssec:impl_aggr_old} controls the commit phase of each TS
-guaranting that two conflicting TS will be committed in the correct
+guarantying that two conflicting TS will be committed in the correct
 order. In Section \ref{sssec:impl_aggr_new} I will outline the
 shortcomings of the existing mechanism and describe the new mechanism
 I build that extends the previous.
@@ -171,14 +171,14 @@ constraints are:
 \item If the RPCs that are batched in Transaction State $TS_0$ have
   been fully handled before the RPCs batched in $TS_1$ and they both
   modify the same \textbf{YARN Application}, then the commit phase of $TS_0$
-  should have been succefully completed \textbf{before} the commit
-  phase of $TS_1$
+  should have been successfully completed \textbf{before} the commit
+  phase of $TS_1$ begins
 
 \item If the RPCs that are batched in Transaction State $TS_0$ have
   been fully handled before the RPCs batched in $TS_1$ and they both
   modify the same \textbf{NodeManager}, then the commit phase of $TS_0$
-  should have been succefully completed \textbf{before} the commit
-  phase of $TS_1$
+  should have been successfully completed \textbf{before} the commit
+  phase of $TS_1$ begins
 
 \item If Transaction States $TS_0$ and $TS_1$ modify different YARN
   Application \textbf{and} different NodeManager then they can be committed in parallel
@@ -198,7 +198,7 @@ committed before. The un-committed TS is put in a queue to be
 examined later.
 
 To make it more clear, I will give an example of how the commit mechanism
-works. To make it easier, I assume that our only lock is on
+works. To make it easier, I assume that the only lock is on
 application IDs and we have only three applications running. The FIFO
 queues for the applications are depicted in Figure
 \ref{fig:impl_tx_aggr_queue}. The initial state of the system is in
@@ -212,7 +212,7 @@ so it is placed in the respective queues, Figure
 \ref{fig:impl_tx_aggr_sub1}. \texttt{TS\_0} is the head
 of the queues for the applications it modifies so it can start the
 commit phase. Since a commit phase may fail and roll-back, it will be
-removed from the queues when the transaction has been succefully
+removed from the queues when the transaction has been successfully
 completed.
 
 While \texttt{TS\_0} tries to persist its modifications to the
@@ -234,7 +234,7 @@ applications it modified, Figure
 \ref{fig:impl_tx_aggr_sub3}. \texttt{TS\_1} is now the head for
 \texttt{app\_0} and \texttt{app\_1} so it starts the commit
 phase. This is not the case though for \texttt{TS\_2} which still has
-to wait for \texttt{TS\_1} to finish. \texttt{TS\_1} successfuly
+to wait for \texttt{TS\_1} to finish. \texttt{TS\_1} successfully
 completes its transaction, removed from the queues and now
 \texttt{TS\_2} is in the head position, Figure
 \ref{fig:impl_tx_aggr_sub4} so it can start committing to the database.
@@ -278,7 +278,7 @@ completes its transaction, removed from the queues and now
 \subsubsection{Multiple TS per commit}
 \label{sssec:impl_aggr_new}
 The existing mechanism described in the section above provided the
-consistency model that we required and parallelism for
+consistency model we required and parallelism for
 non-conflicting TSs. The major issue that had to be addressed was that
 for conflicting TSs $(1)$ they had to wait in the queue for another TS
 to finish, in the example above \texttt{TS\_1} and \texttt{TS\_2} and
@@ -286,7 +286,7 @@ $(2)$ for every transaction committed we paid the network latency
 penalty and the time probably to acquire locks etc. In order to solve
 the first problem we examined different solutions. First I tried to
 make a more fine-grained lock. Instead of locking on application and
-node IDs, try to lock for containers. Although this solution whould
+node IDs, try to lock for containers. Although this solution would
 increase parallelism, it was very risky that we would end-up with a
 corrupted state. Next solution was to remove the system with the
 queues and replace it with exclusive reentrant locks. The expected
@@ -297,11 +297,12 @@ wait time in the queue for a TS to be committed and the RTT for each
 transaction performed. The mechanism extends the method described in
 Section \ref{sssec:impl_aggr_old} by aggregating multiple TSs into a
 single one while it guarantees consistency. The queue system still
-gives us the proper order in which the TSs should be persisted. A TSs
+gives us the proper order in which the TSs should be persisted. At the
+beginning a TS
 is examined if it should be persisted in the database. If it is not
-possible to be persisted due to conflicting TSs then it is put in a
+possible to be persisted due to conflicting TSs then it is put in the
 \emph{toBeAggregated} set. If it is permitted to commit, then it does so
-and construct an extended TS called
+and constructs an extended TS called
 \emph{AggregatedTransactionState}.
 
 The \emph{AggregatedTransactionState} contains TSs from the
@@ -318,8 +319,8 @@ following aggregation rules:
     aggregated in the \emph{AggregatedTransactionState}.
 \end{enumerate}
 
-The first case is trivial and we have examined it in the previous
-section. For the second case, the mechanism gets the modified
+The first rule is trivial and we have examined it in the previous
+section. For the second rule, the mechanism gets the modified
 application and node IDs from a Transaction State \texttt{TS\_a}.
 Then it retrieves all the conflicting TSs from the appropriate queues
 that are blocking \texttt{TS\_a} from being committed. If all of the
@@ -331,7 +332,7 @@ with a ``big'' Transaction State, the
 \emph{AggregatedTransactionState} that will be committed in the
 database. The \emph{AggregatedTransactionState} class actually extends
 the \emph{TransactionState} class and for every TS that is aggregated
-it updates the data structures with the modifications of the TS. The
+it updates the data structures with the modifications of that TS. The
 \emph{toBeAggregated} data structure is a FIFO queue so the TSs that
 are examined for aggregation are kept in the correct order. At the
 end of the aggregation process, the data structures of the
@@ -365,8 +366,8 @@ done three commits in the database, we have now reduced it to two.
 \label{fig:impl_tx_aggr_example}
 \end{figure}
 
-Another example that demonstrates the improvement we have achieved is
-described in the following paragraph. Consider the locking queues as
+Another case that demonstrates the improvement we have achieved is
+described in the following example. Consider the locking queues as
 depicted in Figure \ref{fig:impl_tx_aggr_example} for two applications. All the Transaction
 States are blocked behind \texttt{TS\_0} which is at the commit
 phase. At that time the \emph{toBeAggregated} set contains
@@ -408,4 +409,4 @@ the queue and the communication latency. TSs do not have to wait in
 the queue for all the conflicting TSs to be committed. Once one
 conflicting TS is committed then the mechanism aggregates as many as
 possible TSs. Moreover, since multiple TSs are squashed into a single
-one, there is only one commit phase reducing a lot the network latency.
+one, there is only one commit phase reducing the network latency.
