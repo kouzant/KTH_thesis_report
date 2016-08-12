@@ -21,12 +21,12 @@ RPCs. The first type is the heartbeat that the
 in order to report progress of the application, diagnostics and of
 course allocation requests. The second type is the heartbeats that
 \emph{NodeManager}s send with the statuses of the containers, health
-status of the node etc. Unfortunatelly, these RPCs can get quite big
+status of the node etc. Unfortunately, these RPCs can get quite big
 in size and considering the limitation of a row size in NDB they had
 to be split in multiple tables. For example, if a NM runs 1000
 containers then in the heartbeat it will include the status for all of
 those. Also, when an AM has just started and makes an allocate
-request, this request can contain hundrends of requirements. So the
+request, this request can contain hundreds of requirements. So the
 RPCs are split and stored in the tables as illustrated in Figure
 \ref{fig:impl_fk_yarn_rpc}. The \texttt{yarn\_appmaster\_rpc} table
 holds general information that is common for both RPCs such as the
@@ -34,7 +34,7 @@ holds general information that is common for both RPCs such as the
 specific information for allocations or NM status is stored in the
 other tables.
 
-The lifecycle of an RPC is as follows. First a method is invoked by
+The life cycle of an RPC is as follows. First a method is invoked by
 an RPC, it decodes the request, which is encoded into a Protocol
 Buffers encoding. Then it \textbf{stores} the request in NDB into the
 respective tables, it gets the current Transaction State where it adds
@@ -46,7 +46,7 @@ and NMs do not have to resend the same information, since RM will read
 the last heartbeats from the database. Although, that seems a very
 good architecture, persisting and deleting thousands of rows in the
 database every second is a tough work and a gain of a few milliseconds
-in commit time improves the overall performace.
+in commit time improves the overall performance.
 
 \begin{figure}
 \centering
@@ -58,14 +58,14 @@ in commit time improves the overall performace.
 If you recall from Section \ref{ssec:impl_fk_appmaster_rpc}, we have
 not removed the foreign key constraints from the database schema for
 these tables. At that point we discovered that the foreign
-key contraints in the RPCs tables really killed performance. I run
+key constraints in the RPCs tables really killed performance. I run
 some micro-benchmarks to prove the overhead and the results are shown in
 Figure \ref{fig:impl_fk_overhead}. The red line in the diagram is the
 time needed to remove rows from the tables in Figure
 \ref{fig:impl_fk_yarn_rpc}. Then I have changed the schema and removed
 the foreign keys. The time to remove the RPCs from the database
 without foreign keys is illustrated with the light blue colour. The impact
-on performance of foreign keys in our schema was huge. The perfomance
+on performance of foreign keys in our schema was huge. The performance
 for persisting data with (blue line) and without (brown) foreign keys
 is comparable until 1500 RPCs but then the schema without the foreign
 keys has better performance. It was clear from the micro-benchmark that
@@ -80,7 +80,7 @@ constraints has similar performance with a no foreign key constraints
 schema. Then the tables specific to AM \emph{allocate} and NM
 \emph{heartbeat} would have foreign keys to
 \texttt{yarn\_allocate\_rpc} and \texttt{yarn\_heartbeat\_rpc}
-respectivelly. The problem with this setup was the five children table
+respectively. The problem with this setup was the five children table
 of the \texttt{yarn\_allocate\_rpc} table. Considering the overhead of
 five foreign keys we have concluded
 to remove all the constraints from these tables and implement the
@@ -95,7 +95,7 @@ service described in the rest of this section.
 
 The removal of the previously persisted RPCs is part of the
 transaction that commits scheduling decisions in the database. If we
-are slow in this part, this will increament the commit time of the
+are slow in this part, this will increment the commit time of the
 whole Transaction State which would make other Transaction States to
 be blocked more time in the wait queue having a direct impact on the
 cluster utilization. Persisting new RPCs is done when an RPC arrives
@@ -115,7 +115,7 @@ the \texttt{yarn\_appmaster\_rpc} table are removed and \textbf{not}
 from the others, opposed to the previous solution. The entries at the other tables are taken care by the
 \emph{Garbage Collector} service.
 
-\emph{Garbage Collector} (GC) is a Hops-YARN service that purgues
+\emph{Garbage Collector} (GC) is a Hops-YARN service that purges
 asynchronously old RPC entries from the database. The main thread of
 GC reads the \texttt{rpcid}s and \texttt{type}s from the
 \texttt{yarn\_rpc\_gc} table. Then it creates a number of threads that
@@ -160,7 +160,7 @@ already overloaded with making scheduling decisions, handling AM
 heartbeats, etc we decided that the Garbage Collector service will run on
 the leader of the standby RMs -- ResourceTrackers.
 
-The asyncronous removal of entries from NDB off-loaded the Transaction
+The asynchronous removal of entries from NDB off-loaded the Transaction
 State commit phase in that extend that we decided to use it also for
 another case that it took more time to persist data than that we
 desired. That is the case of Allocate Response. When the AM registers
@@ -177,7 +177,7 @@ allocate response are: \texttt{yarn\_allocate\_response},
 that case was that when we were persisting an allocate response, first we
 had to delete the previous response generated by the
 scheduler. So each addition to the database, implicitly means an extra
-deletion. The delete operation should remove probably hundrends of
+deletion. The delete operation should remove probably hundreds of
 rows of allocated containers and completed containers' status. We
 followed the same method as described above with the RPCs. A new table
 was put in the schema, \texttt{yarn\_alloc\_resp\_gc}, that is
@@ -202,11 +202,11 @@ real not handled RPCs. The only drawback is that it might take more
 time to read the RPC tables since they might contain more rows than
 actually needed. In addition, the GC runs on the RT so until the new
 RM makes a transition from standby to active and recover the persisted
-state, the old RPCs would have been collected. The same philosofy
+state, the old RPCs would have been collected. The same philosophy
 applies for the Allocate Responses. The old allocate response of an
 application is removed synchronously from table
 \texttt{yarn\_allocate\_response}, by the Transaction State. Each
-reponse has an increamented ID. At any time, there is only one ID for
+response has an incremented ID. At any time, there is only one ID for
 each application attempt stored in this table. When the scheduler
 constructs the last allocate response before it crashed, it filters
 the entries read from \texttt{yarn\_allocated\_containers} and
