@@ -10,7 +10,7 @@ The first set of operations that where slow to commit were regarding
 the RPCs we store for recovery. As I have mentioned earlier Hops-YARN
 recovery procedure rebuilds the state of the scheduler from the state
 persisted in the database. Moreover, every time the
-\emph{ApplicationMasterService} or the \emph{ResourceTrackingService}
+\emph{ApplicationMasterService} or the \emph{ResourceTrackerService}
 receive an RPC they persist it in NDB as well. If the RM crashes, it
 will restart or the standby RM will become active, read the latest
 RPCs stored in the database and simply replay them. RPCs in the
@@ -38,9 +38,9 @@ The life cycle of an RPC is as follows. First a method is invoked by
 an RPC, it decodes the request, which is encoded into a Protocol
 Buffers encoding. Then it \textbf{stores} the request in NDB into the
 respective tables, it gets the current Transaction State where it adds
-the \texttt{rpcid}. Then events are triggered, containing the
+the \texttt{rpcid}. Events are triggered, containing the
 Transaction State and handled by the RM components. When all the
-events are handled the RPCs that were previously stored are deleted
+events have been handled the RPCs that were previously stored are deleted
 from the database. If the RM crashes somewhere in the middle, then AMs
 and NMs do not have to resend the same information, since RM will read
 the last heartbeats from the database. Although, that seems a very
@@ -68,11 +68,11 @@ without foreign keys is illustrated with the light blue colour. The impact
 on performance of foreign keys in our schema was huge. The performance
 for persisting data with (blue line) and without (brown) foreign keys
 is comparable until 1500 RPCs but then the schema without the foreign
-keys has better performance. It was clear from the micro-benchmark that
+keys performed better. It was clear from the micro-benchmark that
 foreign keys should be removed from this set of tables as well. Before
 removing completely the constraints we have experimented with a tree
 structure of the foreign keys as in Figure
-\ref{fig:impl_fk_alternate_schema}. In this schema, only tables
+\ref{fig:impl_fk_alternate_schema}. In this schema, only the tables
 \texttt{yarn\_heartbeat\_rpc} and \texttt{yarn\_allocate\_rpc} would
 have foreign keys to \texttt{yarn\_appmaster\_rpc}. The
 micro-benchmark has shown that a schema with two foreign key
@@ -80,7 +80,7 @@ constraints has similar performance with a no foreign key constraints
 schema. Then the tables specific to AM \emph{allocate} and NM
 \emph{heartbeat} would have foreign keys to
 \texttt{yarn\_allocate\_rpc} and \texttt{yarn\_heartbeat\_rpc}
-respectively. The problem with this setup was the five children table
+respectively. The problem with this setup was the five child tables
 of the \texttt{yarn\_allocate\_rpc} table. Considering the overhead of
 five foreign keys we have concluded
 to remove all the constraints from these tables and implement the
@@ -110,7 +110,8 @@ and the \texttt{type} of an RPC. The type can be either
 invokes a method, this method will get the Transaction State from the
 Transaction State Manager. We add the \texttt{rpcid} and the
 \texttt{type} of that RPC in the data structures of the TS and are
-persisted in the database. At the same transaction, \textbf{only} the rows from
+persisted in the database. When all of the RPCs have been handled
+properly, at the same transaction, \textbf{only} the rows from
 the \texttt{yarn\_appmaster\_rpc} table are removed and \textbf{not}
 from the others, opposed to the previous solution. The entries at the other tables are taken care by the
 \emph{Garbage Collector} service.
@@ -194,7 +195,7 @@ failed RM tries to construct the last state from the database, it
 fetches all the entries stored in the RPC tables and joins the split
 parts. The detail that makes the system work is that it consults the
 \texttt{yarn\_appmaster\_rpc} table about the \texttt{rpcid}s of the
-RPCs that have not been handled when the RM crashed. Since the entries
+RPCs that had not been handled when the RM crashed. Since the entries
 for that table are removed synchronously in the commit phase of the
 Transaction State, we guarantee that this table will not contain any
 rubbish. So the RPCs that will be joined and re-constructed will be
