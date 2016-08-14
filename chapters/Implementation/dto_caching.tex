@@ -69,4 +69,116 @@ up with instances created by the ``slow'' ClusterJ instantiation
 process. When we actually needed to use a DTO, we would fetch it from
 the cache which is faster since the objects would have already been
 created. When the cache has been used a worker thread would fill it up
-again with new instances.
+again with new instances. The cache generator service should be used
+cautiously. We should not max-out CPUs just for creating cached DTOs, so the
+cache would be enabled only for a fraction of sessions and only for
+heavy-duty DTOs. The reason why we decided to have both cache-enabled
+and cache disabled sessions, was that we did not want to pay the
+cache-miss penalty for the type of DTOs that we already know we do not
+cache. An overall architecture of Hops-YARN database session provider
+is illustrated in Figure \ref{fig:impl_dto_session_arch}. A
+transaction requests a cache-disabled session from the cache-disabled
+session pool $(1)$. If there is a session available -- not used by
+other transactions -- then the session provider return a session from
+the pool, otherwise it creates a new one. When the transaction has
+been committed to the database, the session is returned back to the pool
+of cache-disabled sessions $(3)$.
+
+The workflow for a cache-enabled session regarding the provider is
+slightly different. There are two different cache-enabled session
+pools. The first one, \emph{Preparing pool} contains sessions with
+their cached used and probably empty. The second pool is the
+\emph{Ready pool} with sessions whose cache is full and ready for
+usage. When a transaction requests a cache-enabled session, the session
+provider first looks on the \emph{Ready pool} $(1)$. If there is an
+available session it returns it to the requester $(2)$, otherwise it
+looks into the \emph{Preparing pool}. Finally, if there is no session
+there either, it creates a new session to NDB. When the transaction
+has performed its operations, it returns the session to the
+\emph{Preparing pool}. The cache generator service picks sessions from
+the \emph{Preparing pool} $(1)$, fills up their cache with the appropriate
+DTO instances and places them back to the \emph{Ready pool} $(2)$.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.4]{resources/images/Implementation/db_session_pools.png}
+\caption{Hops-YARN DB session pool}
+\label{fig:impl_dto_session_arch}
+\end{figure}
+
+The cache itself, \texttt{DTOCacheImpl} is implemented as a \texttt{ConcurrentHashMap} whose
+key is the type of DTO cached and its value is a \texttt{CacheEntry}
+object. The \texttt{CacheEntry} is supported by an
+\texttt{ArrayBlockingQueue} providing methods for putting and getting
+cached objects and increase the cache size. We will see later how
+the size of the cache is increased. For every \texttt{HopsSession}
+that has its cache enabled, there is an instance of
+\texttt{DTOCacheImpl} which provides methods for (de)registering a DTO
+type to the cache and methods that delegate putting and getting to the
+appropriate \texttt{CacheEntry}. To avoid the cache-miss penalty there
+two ways to ``instantiate'' DTO objects. The first one is the
+\texttt{newInstance} which makes a call to ClusterJ to create the
+object. We use this for non-cached DTO types. The other variation is
+the \texttt{newCachedInstance} which makes a call to the cache
+instead. Apparently in this version, the DTO has been instantiated
+ahead of time and it is fetched from the cache. The semantics of the
+cache is returning the cached object if
+it exists in the cache and \texttt{null} if the cache is empty. In
+case of an empty cache, we fall back to the ClusterJ instantiation
+method. Every \texttt{CacheEntry} keeps track of how many cache-misses
+have been occurred. If there are too many, it means that this DTO type
+is very demanding and the cache size is increased every time the
+cache-misses exceed a certain threshold. So, at the same cache-enabled
+session two DTO types might have different cache size depending on
+their ``popularity''.
+
+When a cached-enabled session has been used, it is put back in the
+\emph{Preparing pool}. The \texttt{DTOCacheGenerator} is a service
+that picks sessions from that pool and fills their cache. It removes a
+number of session from the \emph{Preparing pool} and it spawns threads
+that will populate every \texttt{CacheEntry} that is not
+full. The instantiation of the cached DTO objects is done with the
+\texttt{newInstance} method of ClusterJ. \texttt{CacheEntry} returns
+\texttt{true} for every put, until
+the back-end \texttt{ArrayBlockingQueue} is full and returns
+\texttt{false}. When all the \texttt{CacheEntry}s of a session are
+full, it (session) is placed to the \emph{Ready pool} and another
+transaction will use it. One note should be made here. ClusterJ
+allocates memory for DTO objects out of the heap, with the use of
+Java \emph{direct} ByteBuffer. ByteBuffers do not account in Java's
+garbage collection mechanism, reducing the GC pause time. Also, they are ideal
+for heavy duty I/O operations since JVM does not have to copy data
+from intermediate buffers to native buffers. With the caching
+mechanism we might create more that 6000 DTOs ahead of time per
+session and the default direct memory size reaches its limit very
+quickly. In order to avoid related exceptions, the flag
+\texttt{-XX:MaxDirectMemorySize} should be set to a reasonable value.
+
+\lstinputlisting[float,language=xml,numbers=left,caption={Caching
+  mechanism configuration file},label=lst:dto_cache_conf,basicstyle=\footnotesize]{resources/listings/dto-cache-config.xml}
+
+All the parameters for the caching mechanism are specified by a
+configuration file, \texttt{dto\_cache-config.xml} in
+\texttt{hops-metadata-dal-impl-ndb} that is loaded when
+the service starts. A typical example looks like in Listing
+\ref{lst:dto_cache_conf}. First, we specify how many sessions
+will have their cache enabled, then a hard limit on the number
+of threads that will be created to populate the sessions' cache and
+the number of sessions each worker thread will handle. Then in line 14
+is the number of sessions in the \emph{Preparing pool} required to
+trigger the cache generator threads. If \textbf{sessionsInterval}
+$>$ \emph{sessionsPerThread} $*$ \emph{threadLimit}, then some
+sessions will be blocked until a thread has finished its work and be
+scheduled again. Following the mechanism parameters, are the DTO types
+that should be cached. In this example we want each cache-enabled
+session to cache two types of DTOs. Line 18 is the class name that
+encloses the ClusterJ specially decorated interface. Line 21 is the
+name of the interface and then follows the initial size of the cache,
+the maximum size and the step which the cache size will be increased after some
+threshold of cache-misses.
+
+The caching mechanism explained in this section boosted the
+performance of Hops-YARN as we will see in Chapter \ref{chap:analysis}. Yet
+we have not discovered the advantages in full extend since we need to
+experiment more with different types of DTOs. For sure ClusterJ's way
+of creating DTOs is not optimal, imposing a great overhead to our system.
