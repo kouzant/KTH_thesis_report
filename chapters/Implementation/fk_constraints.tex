@@ -44,9 +44,10 @@ children tables. It is very important that this logic will make
 \textbf{primary key} operations for two reasons. The first reason, which
 applies to all relational databases, is that primary keys are indexed,
 so you avoid making full table scan. The indexes usually are
-implemented with a \texttt{B-tree} data structure which allows
-operations in logarithmic time. The second reason, which applies
-specifically to NDB, is that primary keys are also partition keys. A
+implemented with a \texttt{B-tree} and/or hash table data structure which allows
+operations in logarithmic or constant time depending on the query. The second reason, which applies
+specifically to NDB, is that primary keys are also partition keys, if
+no partition keys are defined explicitly. A
 partition key defines how data will be distributed across Data Nodes
 in the MySQL Cluster. Executing statements based on the primary key,
 alleviates the round-trip time between the Data Nodes, since NDB will
