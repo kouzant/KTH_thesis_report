@@ -29,7 +29,7 @@ constraints in the tables that store RPCs (Figure
 \ref{fig:impl_fk_yarn_rpc}). Also, the removal of old values is done
 asynchronously so no overhead in the commit phase of the TS. Finally,
 we have removed some \texttt{flush} operations from the application
-logic that had to be there before.
+logic that had to be there before to serialize the queries.
 
 
 \begin{figure}
@@ -46,4 +46,16 @@ utilization remained almost the same but it was already high
 enough. Nevertheless, we have managed to improve the cluster
 utilization by a few percentages for a 5000 nodes simulation, reaching
 86 $\%$. The number of containers created in a 5000 nodes cluster
-increased 10$\%$ with the Garbage Collector service.
+increased by 10$\%$ with the Garbage Collector service while in a 3000
+nodes cluster it remained almost the same. Moreover, there is interesting
+side effect with decreased commit time. Since, TSs take less time to
+commit, the blocking TSs that cannot be aggregated also spent less
+time in the waiting queues of the Transaction Manager. That leads to
+``smaller'' but more AggregatedTransactionStates. For instance, in the
+simulation with 5000 NodeManagers without the GC service, there were
+roughly 900 TS commits with on average 2000 objects to persist just
+to update the status of NodeManagers. On the contrary, with the GC
+service, there were 1690 TS commits with 960 objects to persist for
+the NodeManagers. This side effect also helped vanish the rollback of
+transactions due to overloading (Section \ref{sssec:impl_aggr_new}), 
+since there were not that many TSs in the queue to aggregate.
