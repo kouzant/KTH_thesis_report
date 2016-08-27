@@ -1,1 +1,51 @@
-Evaluate the TX aggregation
+The impact of the aggregation mechanism in the Transaction Manager was
+measured with a synthetic payload that should be persisted in
+NDB. Then we measured the total number of transaction commits that
+took place, the average time required by each transaction and the
+total time taken for the payload to be committed. The comparison is
+between the \emph{Simple} and \emph{Aggregated} commit mechanism.
+
+The payload was for creating 100 Applications. Each application would
+uniform randomly request or release 1000 containers on 30 nodes
+chosen also uniformly at random. A new Transaction State object object
+was created with 60$\%$ probability over re-using an existing
+one. Finally, when all this information was tracked by the Transaction
+State objects were persisted in the database in a foreign-key free
+schema. The reason to pick hosts
+and TS objects randomly is to create conflicts in the commit mechanism
+of the Transaction Manager that would block TSs. In that way we could
+measure the impact of the aggregation mechanism.
+
+\begin{table}
+\centering
+\begin{tabular}{| c | c | c | c |}
+\hline
+  & Simple & Aggregated \\
+\hline
+\# commits & 9867 & \textbf{79} \\
+\hline
+AVG time/TS commit (ms) & \textbf{10.4} & 74.1 \\
+\hline
+Time for all TXs (ms) & 21762 & \textbf{8088} \\
+\hline
+\end{tabular}
+\caption{Comparison of commit mechanisms}
+\label{tab:ev_commit_mechanism}
+\end{table}
+
+The results of the evaluation are presented in Table
+\ref{tab:ev_commit_mechanism}. It is clear that the aggregation
+mechanism minimized the commits in the database. In the Simple mechanism
+each TS was performing a commit phase whereas in the Aggregated mechanism,
+multiple TS are squashed into a single commit. It is normal that the
+average time needed to commit a single TS in the database is greater
+in the new version, since now the TS contains much more
+information. In some cases the AggregatedTransactionState was
+aggregating up to 200 Transaction States. Also, some times the commit
+time per TS was above 150 but the standard deviation is very low with
+most of the results near the mean value. Overall, we spent more
+than the half of the time than with the Simple mechanism to persist
+the whole payload.
+
+*** Run simulation simple/aggregate, async, nocache and report cluster
+utilization and wait in the queue time
