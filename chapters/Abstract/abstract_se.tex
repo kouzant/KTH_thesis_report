@@ -1,1 +1,27 @@
-IETF xxxx Arbetsgruppen har definierat
+ Nu för tiden lagrar stora organisationer och forskningsinstitutioner enorma mängder data.
+För att kunna utvinna någon värdefull information från dessa data behöver den bearbetas
+av ett kluster av datorer. När flera datorer gemensamt ska bearbeta data behöver de utgå
+från ett så kallat ``distributed processing framework''. I dagsläget är Apache Hadoop det
+mest använda ramverket för distribuerad lagring och behandling av data. Detta examensarbete
+är har genomförts vid SICS Swedish ICT där vi byggt Hops, en ny distribution av
+Apache Hadoop som drivs av ett distribuerat MySQL Cluster NDB som erbjuder en hög tillgänglighet.
+Hops-YARN är Hops ramverk för resurshantering med distribuerade ResourceManagers som lastbalanserar
+deras ResourceTrackerService. I detta examensarbete använder vi Hops-Yarn på ett sätt där ``back-end''
+databasen flitigt används för att hantera ResourceManagerns metadata och inkommande RPC-anrop. Vår
+konfiguration erbjuder en hög feltolerans och återställer sig mycket snabbt vid
+felberäkningar. Vidare används NDB-klustrets Event API för att ResourceManager ska kunna
+kommunicera med den distribuerade ResourceTrackers.
+
+Detta projekt syftar till att optimera de mekanismer som används för ihållande metadata
+i NDB både i termer av transaktions begå tid men också i termer av pre-
+bearbeta dem medan samtidigt garantera enhetlighet i RM: s tillstånd. ResourceManagerns tillstånd
+i RAM-minnet får under inga omständigheter
+avvika från det tillstånd som finns lagrat i NDB:n. Med dessa mål i åtanke undersöktes flera
+lösningar som förbättrar prestandan och därmed gör Hops-Yarn jämförbart med Apache YARN.
+De lösningar som föreslås i denna uppsats förbättrar “pure commit time” när en transaktion
+görs i ett MySQL Cluster samt förbehandlingen och parallelismen i vår Transaction Manager.
+Resultaten tyder på att Hops prestanda ökade dramatiskt vilket ledde till ett effektivare
+nyttjande av tillgängliga resurser i ett kluster bestående av ett tusental datorer. När
+nyttjandet av tillgänliga resurser i ett kluster förbättras med några få procent kan
+organisationer spara mycket pengar.
+
