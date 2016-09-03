@@ -14,13 +14,13 @@ overview of the architecture in HPC. Storage nodes are machines with very high d
 minimum processing power. Their main usage is to store data that are
 going to be processed and analyzed in the future. The second building
 block of the architecture is the Computing nodes. These machines have
-no storage capabilities but they are equiped with the state of the art
+no storage capabilities but they are equipped with the state of the art
 processing units and a lot of RAM. Those modules communicate most
 probably with a high throughput, low latency network. The most common
 industry standard for interconnecting nodes in HPC is InfiniBand
-\cite{infiniband} that it can
+\cite{infiniband} that can
 reach 30 Gb/s in each direction and sub-microsecond latency. Users
-issue their jobs to the Head node which is responsible for transfering
+issue their jobs to the Head node which is responsible for transferring
 the requested datasets from the Storage nodes to the Computing nodes,
 monitor the tasks and finally return the result to the end user.
 

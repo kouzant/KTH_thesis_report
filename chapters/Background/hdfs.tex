@@ -1,6 +1,6 @@
-As this project is focused on the resource management framework, I will
-not give a detailed description of the Hadoop Distributed File
-System. Yet, I will go through some basic concepts that will make the
+As this project is focused on the resource management framework, a very
+brief description of the Hadoop Distributed File
+System will be given. Yet, this section will go through some basic concepts that will make the
 reader understand better the overall architecture of Hadoop.
 
 HDFS is the distributed file system of Hadoop platform. It is designed
@@ -64,20 +64,20 @@ is kept up-to-date with the blocks that are stored in every DN.
 
 The DN is the slave entity in the HDFS master/slave architecture as depicted in
 Figure \ref{fig:hadoop_hdfs} and the actual storage of blocks. Upon a
-client request to store a file in HDFS, the NN instructs it (the
-client) which DNs to contact to store the individual file block. The
+client request to store a file in HDFS, the NN instructs the
+client which DNs to contact to store the individual file block. The
 same procedure is followed when a client requests to read a file. The
 NN returns a list with DNs that store the blocks forming the whole
 file. The client then contacts each and every DN, fetching the
 corresponding blocks.
 
-A DN periodically heartbeats to NN. As I have explained in Section
+A DN periodically heartbeats the NN. As it is explained in Section
 \ref{ssec:nn}, the heartbeat contains a list of blocks, that the DN
-issued the heartbeat stores, so that the NN maintains a map of file
+stores, so that the NN maintains a map of file
 blocks and DataNodes. Also, the heartbeat signifies that the DN is
 alive and can be used for storage and retrieval of blocks. Heartbeats
 also carry information regarding the status of the DN such as total
-storage capacity, storage in use etc. These metrics are taken
+storage capacity, storage in use etc. These metrics are taken under
 consideration by the NN when assigning blocks to DN.
 
 The DataNode also perform various operations as instructed by the

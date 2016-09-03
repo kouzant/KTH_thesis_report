@@ -4,46 +4,46 @@ process. This will increase the number of events processed by the
 scheduler and the overall cluster utilization. In order to explore
 the limits of the current system, different optimization techniques
 were examined and evaluated as presented in Chapters
-\ref{chap:implementation} and \ref{chap:analysis}. For that reason a
+\ref{chap:implementation} and \ref{chap:evaluation}. For that reason a
 \emph{Quantitative Research} method was followed. The impact of a new
 feature in the system was measured in terms of commit time in the
 database, the percentage of events handled by the ResourceManager or
 the overall cluster utilization as suited.
 
 The quantitative research method is supported by \emph{deductive}
-approach and \emph{experimental} method. Before starting my endeavor into
-implementing a new feature, I made a thorough profiling of the
-workflow of the system in order to identify the bottlenecks. Afterwards,
-wherever it was possible, I created a prototype of the new
-feature and did a micro-benchmark to validate any performance
+approach and \emph{experimental} method. Before starting an iteration for
+implementing a new feature, a thorough profiling of the
+workflow of the system was performed, in order to identify the bottlenecks. Afterwards,
+wherever it was possible, a prototype was created of the new
+feature and benchmarked to validate any performance
 gain. The micro-benchmark gave us an incentive on whether it was worth
-investing on that feature or not. In case of a positive feedback, I
-implemented a concrete version of the feature and finally measured the system's
-performance. After the completion of one feature, I iterated the
-procedure explained above to identify more bottlenecks in the system.
+investing on that feature or not. In case of a positive feedback,
+a concrete version of the feature was implemented and finally the system's
+performance was measured. After the completion of one feature, another iteration of the
+procedure explained above took place to identify more bottlenecks in the system.
 
 Regarding the data collection method, \emph{experiments} were
 conducted throughout the project duration and with \emph{statistics}
-data analysis I calculated the results presented in Chapter
-\ref{chap:analysis}. For the purpose of data collection I used a
-cluster operated by SICS with seven physical machines and two MySQL
+data analysis calculation the results are presented in Chapter
+\ref{chap:evaluation}. For the purpose of data collection a
+cluster operated by SICS was used with seven physical machines and two MySQL
 Clusters with four and two nodes respectively. In order for the
-results to be \emph{reliable} I run each experiment several times and
-made an average where it was reasonable. Since the experiments took a
-some time to finish and produced a lot of valuable data, I used custom
-code to dump these data to files and process them later. For the
-\emph{validity} part of the experiments, I used a simulator that
+results to be \emph{reliable} each experiment run several times and
+an average was computed where it was reasonable. Since the experiments took a
+some time to finish and produced a lot of valuable data, custom
+code to dump these data to files was employed and process them later. For the
+\emph{validity} part of the experiments, a simulator was used that
 simulated a configurable number of nodes in a Hadoop cluster and
 measured in fixed intervals the variables that were interesting for
 the system performance. After spawning the ResourceManager and the
 ResourceTracker in multiple machines, it starts simulating the
 NodeManagers that heartbeat the scheduler. Also, it parses existing
-trace files and issues a synthetic workload to the scheduler. The simulator I used is a
+trace files and issues a synthetic workload to the scheduler. The simulator used is a
 modified version of the simulator that ships together with the Hadoop
 distribution. The difference is that the load of simulating the
 NodeManagers and sending application launching requests is distributed across
 multiple machines in the cluster. Since the workload is parsed from
-trace files, it makes my experiments \emph{reproducible} by other
+trace files, it makes the experiments \emph{reproducible} by other
 researchers. A note should be taken here. The performance of the system is affected
 by the load of the physical machine, the network traffic and the
 utilization of the database, so a small variation on the results

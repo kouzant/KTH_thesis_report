@@ -5,7 +5,7 @@ scheduled on Hops-YARN without any modification. Although the
 interface is the same, there are some key characteristics that
 distinguish the two implementations and can be categorized into
 architectural, recovery mechanism and load balancing. In the rest of
-the section I will present the differences in every category.
+the section the difference will be presented for every category.
 
 \subsection{Architecture}
 \label{ssec:hopsyarn_arch}
@@ -25,24 +25,24 @@ The protocol guarantees a single process acting
 as a leader at any point of time with performance comparable to
 Apache ZooKeeper. Having the database acting as a persistent storage
 and as a leader election mechanism, Hops drops ZooKeeper from its
-stack releaving the operations team from the burden of maintaining
+stack relieving the operations team from the burden of maintaining
 one extra service.
 
 \subsection{Fault tolerance \& HA}
 \label{ssec:hopsyarn_fault_tol_ha}
-In Section \ref{sssec:yarn_ha} I have outlined how Apache Hadoop YARN
+Section \ref{sssec:yarn_ha} outlined how Apache Hadoop YARN
 deals with RM failures and provides a highly available solution. In
 Hops-YARN we follow a different path for storing information for
 recovery. In YARN, AMs and NMs communicate with the RM through a
 heartbeating mechanism. These heartbeats carry information such as
 (de)allocation requests, health status, etc Since the database allows
-for millions of transaction per second, we store every single RPC that
+for millions of operations per second, we store every single RPC that
 the RM receives and delete them when the request is handled. Moreover,
 every operation that is done on the scheduler state is reflected on a
 modification in the database. The main advantage of this approach over
 the approach followed by Apache YARN is in terms of recovery
 time. It is much faster to read the complete state of the scheduler from the
-distributed in-memory database than asking from every NM to re-sync
+distributed in-memory database than asking every NM to re-sync
 and send back a list of all running containers. Particularly when
 the cluster size grows in the order of thousands of
 machines. Moreover, in case of a crash in Apache YARN, the RM

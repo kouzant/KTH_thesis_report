@@ -33,7 +33,7 @@ in the form \texttt{(word,1)}, where \texttt{word} is every word
 parsed. The result of the \emph{Map} function is passed to the
 \emph{Reduce} function which adds the value of the tuples with the
 same key, in that case is the word. The final result will be a list of
-tuples with unique keys, where the key is all the words parsed from the text and the
+tuples with unique keys, where the keys will be all the words parsed from the text and the
 value would be the occurrences of the word in the text.
 
 Google provided a framework which took advantage of the locality
@@ -118,14 +118,14 @@ shortcomings were regarding the tight coupling of a programming model
 with the resource management infrastructure and the centralized
 handling of jobs \cite{Vavilapalli:2013:AHY:2523616.2523633, 6680946}.
 
-A user who wantsto write an application for MapReduce framework,
+A user who wants to write an application for MapReduce framework,
 all it has to do is to provide implementation for the two
 first-order functions \emph{Map} and \emph{Reduce}. This static
 map-reduce pipeline is very limiting though, as every job should have exactly one
 Map function followed by an optional Reduce function. That workflow is
 not suitable for large scale computations, such as machine learning
 programs that require multiple iterations over a dataset. That means
-that multiple individual MapReduce jobs have to be scheduled while the
+multiple individual MapReduce jobs have to be scheduled while the
 frequent write of data in disk or in a distributed file system would
 impose a considerable latency. A common pattern/misuse
 \cite{Vavilapalli:2013:AHY:2523616.2523633} was to submit jobs with a
@@ -136,7 +136,7 @@ deadlocks and a general instability to the system. The second drawback
 of MapReduce and Hadoop 1.x was the centralized job handling and
 monitoring of their flow. The Master or the \emph{JobTracker} should
 monitor every single job, receiving liveness heartbeats, resource
-requests etc. The is a heavy workload for a single machine that drove
+requests etc. This is a heavy workload for a single machine that drove
 to major scalability issues.
 
 These two crucial limitations of MapReduce led to a total re-design of

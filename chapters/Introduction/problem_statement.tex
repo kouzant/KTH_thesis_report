@@ -1,6 +1,6 @@
 All these read/write operations to the database do not come without
 a cost. First and foremost is the network latency. Even with high
-throughput, low latency network in between of the RM/RT and the database, still
+throughput, low latency network between the RM/RT and the database, still
 it takes more time than in-memory operations. Especially in cases
 where RM operations need more than one round-trip to the database, the
 difference in performance is noticeable.
@@ -20,7 +20,7 @@ great performance degradation. Particularly when we aim for millions
 of operations per second, the use of foreign key constraints should be
 limited and very well designed.
 
-Finally, the transaction state manager of Hops should try to commit
+The transaction state manager of Hops should try to commit
 various states in parallel as much as possible but on the other hand
 ensure the order of two colliding states. For example there should
 never be the case where two states change information about the same
@@ -32,9 +32,9 @@ The distributed MySQL cluster database is a central building block in our
 architecture. A slow commit and process time will result in less events being
 streamed and handled by the RM, directly affecting the cluster
 utilization and the view of the cluster from the RM perspective.
-Also, in terms of HA a slow commit time will decrease the
-rate of handled events while increasing the rate of queued events that
-are to be handled. Our goal is to be able to scale up to 10000 NMs
+A slow commit time will decrease the
+rate of handled events while increase the rate of queued events that
+are waiting to be handled. Our goal is to be able to scale up to 10000 NMs
 with multiple RTs. With the current mechanism this is not possible due
 to delays both in the transaction manager mechanism and in the commit
 time.

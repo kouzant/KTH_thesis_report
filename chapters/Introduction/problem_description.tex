@@ -22,7 +22,7 @@ cluster utilization and scheduling tasks is the \emph{Resource
 Manager} (RM). The view of RM regarding the available resources on the
 cluster is updated frequently (by default 1 second) by a heartbeating
 mechanism. On each machine of the cluster there is the \emph{Node
-Manager} (NM) which periodically sends updates on the machine
+Manager} (NM) which periodically sends updates for the machine
 usage. Users issue their application requests to the RM which then
 allocates a container to create the \emph{Application Master}
 (AM). The AM service is working independently and is responsible to

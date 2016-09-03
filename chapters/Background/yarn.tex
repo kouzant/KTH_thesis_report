@@ -22,12 +22,12 @@ functions from the programming model. It delegates the
 intra-application communication and the tracking of the execution flow
 to per-job components. That unlocks great performance improvements,
 improves scalability and enables a wide variety of frameworks to share
-the cluster resources in a very gentle way.
+the cluster resources in a very smooth way.
 
 YARN uses three main components to provide a scalable and fault
 tolerant resource management platform. The first component is the
 \emph{ResourceManager} (RM), a per-cluster daemon that tracks resource
-usage and node liveness and schedules jobs on the cluster. The second
+usage, node liveness and schedules jobs on the cluster. The second
 component is a per-node \emph{NodeManager} (NM) which is responsible
 for monitoring resource availability on the specific node, reporting
 faults to RM and managing container life-cycle. Finally, there is the
@@ -53,7 +53,8 @@ In YARN the RM acts as the central authority for allocating resources
 in the cluster. It works closely with the per-node NodeManager getting
 an updated view of the cluster by the heartbeats received. The RM
 itself allocates generic resources in the cluster in the form of
-\emph{containers} that have specific CPU and RAM requirements. Those
+\emph{containers} that have specific CPU and RAM requirements, in
+contrast to MapReduce \emph{Map} and \emph{Reduce} slots. Those
 resource requests are piggybacked in the heartbeats issued by every AM.
 As RM is completely unaware about the job execution plan,
 it is up to the AM to make local optimizations and assign the
@@ -72,7 +73,7 @@ in Figure \ref{fig:yarn_RM_components}.
 The \emph{ApplicationMasterService} is responsible for receiving and
 handling heartbeats from the AMs that are launched in the
 cluster. Heartbeats are designed to be as compact as possible, still
-not excluding any vital information. For that reason, Google Protocol
+not missing any vital information. For that reason, Google Protocol
 Buffers \cite{proto_buf} are used for every communication among YARN
 components. Protocol Buffers is a language-neutral, platform-neutral
 mechanism for efficiently serializing data. The heartbeat mechanism
@@ -94,7 +95,7 @@ is expired by the RM. All the containers that were allocated for
 that AM are marked as dead and the RM reschedules the same application
 (ApplicationMaster) on a new container.
 
-As I have previously mentioned, the RM builds its view of the cluster
+As it was previously mentioned, the RM builds its view of the cluster
 by the information that NMs send to it. The
 \emph{ResourceTrackerService} component is responsible for handling such RPCs
 and forwarding them to the appropriate modules. Before a new node in the
@@ -139,7 +140,7 @@ a queue, by default the ``default'' queue. The basic idea is that
 containers are allocated to the application with the fewer resources
 assigned within the queue, providing a uniform distribution of the
 available cluster resources in the long run. There can be multiple
-queue with support for priorities, minimum and maximum shares and FIFO
+queues with support for priorities, minimum and maximum shares and FIFO
 ordering within the queue. Similar to Capacity Scheduler, Fair Scheduler
 also has support for preemption of containers that are already
 assigned. Currently the default scheduler for Hadoop is the Capacity Scheduler.
@@ -178,17 +179,14 @@ Users can write their own ApplicationMaster
 process fitting particular needs of making local optimizations with
 the containers allocated by the RM, monitoring the containers,
 define the recovery procedures when a container dies or capture the
-exit status of a finished task. That opened the road for a plethora
-of applications to run on Hadoop such as Apache Spark
-\cite{apache_spark}, Apache Flink \cite{apache_flink}, Apache Hadoop
-MapReduce \cite{apache_hadoop} etc.
+exit status of a finished task.
 
 \subsubsection{NodeManager}
 \label{sssec:nm}
-The \emph{NodeManager} is the ``worker'' daemon that runs on every
+\emph{NodeManager} is the ``worker'' daemon that runs on every
 physical node of a Hadoop cluster. It is responsible for monitoring
 the health of the physical hardware, authenticating the container
-leases, preparing, monitoring and tearing down the container and
+leases, preparing, monitoring and tearing down containers and
 providing a set of services to the application.
 
 When a node joins a cluster, the NM should register with the
@@ -197,7 +195,7 @@ available in this machine, some security tokens required to
 authenticate the container leases, some communication ports etc. From
 that point NM should periodically heartbeat the RM, default value is 1
 second, proving that is still alive and keeping the RM up-to-date with
-its status. NM regularly runs some monitoring scripts for the
+its status. NM regularly runs some scripts to monitor the
 health of the machine and the status is sent to RM. As a response it
 might get back a list of container leases or some instructions such as
 node decommission because of unhealthy node or to kill some
@@ -209,7 +207,7 @@ the failed node.
 
 Each container in YARN comes along with a \emph{container launch
   context} (CLC). The CLC contains information specific to the
-application that is about to run such as environment variables,
+application such as environment variables,
 dependencies stored in HDFS or on-line, security tokens, commands that
 actually spawn the application etc. Once the NM has validated the
 container lease with the security tokens provided, it should
