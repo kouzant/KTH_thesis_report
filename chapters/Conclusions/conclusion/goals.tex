@@ -1,1 +1,20 @@
-That's the goals subsection
+In Chapter \ref{chap:introduction} the goals of this project were
+set. The primary goals was to improve the cluster utilization and the
+number of heartbeats processed by the scheduler. In order to achieve
+those goals we have also set some sub-goals. With the solutions proposed
+in Chapter \ref{chap:implementation} all the sub-goals were met. In
+particular, with the removal of the foreign key constraints and the
+DTO caching mechanism the transactional commit time was decreased
+dramatically. Some sort of asynchronous API was provided by the
+garbage collector service. It is provided only for a small sub-set but
+still it made big impact to the performance of the system. The new
+aggregation mechanism of the transaction manager of Hops-YARN helped
+the blocked transactions to be committed faster which in turn improved the
+parallelization of the system. Finally, in each step of the
+implementation an evaluation was done to prove the performance impact
+and guide us to new bottlenecks.
+
+Since all the sub-goals were met it was expected to achieve the
+primary goals. As Chapter \ref{chap:evaluation} indicates the two
+primary goals were also accomplished. Both cluster utilization and the
+heartbeat ratio was improved.

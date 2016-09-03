@@ -1,7 +1,32 @@
-%% Did you meet your goals?
-%% What insights have you gained?
-%% What suggestions can you give to others working in this area?
-%% If you had it to do again, what would you have done differently?
+In Hops-YARN, as it is already mentioned, MySQL Cluster NDB is used
+both as a communication transport and as a persistent storage for
+recovery. At the beginning of the project a thorough profiling of the
+execution workflow has been done to identify the bottlenecks of the
+system. The first step was to remove the foreign key constraints from
+the database schema used by Hops-YARN. In Section
+\ref{sec:fk_constraints} is explained how they were replaced by
+application logic that performs primary key operations. Section
+\ref{sec:tx_aggregation} discusses the evolution of the commit
+mechanism which squashes several blocked transaction into a ``big''
+one reducing the number of commits in the back-end database
+system. Section \ref{sec:gc_service} presents the Garbage Collector
+service of Hops-YARN that removes asynchronously old values from the
+database. With that solution the commit time dropped more improving
+the overall performance of the system. Finally, Section
+\ref{sec:dto_caching} explains how the shortcoming of ClusterJ for
+creating DTOs was bypassed by having created them ahead of time in a
+per session cache.
 
-
-In this section we will state the conclusions and insights gained as result of this thesis project.
+After a detailed explanation of the solutions proposed, in Chapter
+\ref{chap:evaluation} follows the evaluation. Each solution is
+evaluated separately by simulating real world traces. In each case key
+characteristics are examined and how they have been improved. In
+Section \ref{sec:performance_overview} there is an overall performance
+overview in terms of cluster utilization and heartbeats processed by
+the scheduler. The comparison is made among the version of Hops-YARN
+before this project, the final version with all the modification
+proposed and the upstream Apache YARN. The figures show that there was
+a clear improvement, in both evaluation parameters, when the two
+version of Hops-YARN are compared. Finally, as far as the cluster
+utilization is concerned, the performance is comparable with Apache
+YARN in clusters with thousands of nodes.
