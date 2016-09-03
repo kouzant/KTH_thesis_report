@@ -1,4 +1,40 @@
-%% What you have left undone?
-%% What are the next obvious things to be done?
-%% What hints can you give to the next person who is going to followup upon your work?
-This is going to be the future work
+A few things have been left undone due to time limitation and are
+discussed in this section for future work.
+
+In most of the cases the evaluation has been done using simulations
+measuring among others the cluster utilization while in others the
+evaluation has been done using benchmarks. It would be more complete
+if in all cases the benchmarks were supported by simulation
+results. That way the perfomance improvements introduced by each step
+would be more clear.
+
+Currently we do not have any insight on the content of Transaction
+State objects, thus we treat them equally. In real world scenarios,
+during the allocation of resources, the Transaction State would carry
+more information about allocated containers than when the cluster is
+full and no further allocations can be made. A fine-grained inspection
+on the content of a TS might improve performance further more. For
+example in the commit mechanism, when an Aggregated Transaction State
+object is overloading NDB, the transaction will roll-back and the
+aggregation policy will enforce a lower limit. If we had any
+information on the content of the TS before hand, we could have
+avoided that situation.
+
+As it is already mentioned, the Garbage Collector service does not
+perform primary key operations. It was a design decision that would
+not complicate the mechanism and burden the commit time by committing
+more information. It is worth trying to persist all the columns needed
+for the primary keys to be reconstructed and measure the
+performance. For sure the deletion time would be lower but it
+remains to be proven if that will have any impact on the performance
+of Hops-YARN in general.
+
+Last but not least, the batching system explained in Section
+\ref{ssec:impl_batch_system} should be improved. Changing the number
+of RPCs that are batched together did not change the
+performance. Every RPC arriving in the ResourceManager among others it
+should get the current Transaction State object from the Transaction State
+Manager. This operation could take $0.06$ ms. If we consider a cluster
+with 10000 NodeManagers heartbeating every second, it is needed 600 ms
+just to acquire the object. At the time of writing that was the latest
+bottleneck encountered and for sure it is worth for future investigation.
