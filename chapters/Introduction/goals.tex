@@ -1,0 +1,24 @@
+The primary goals of this project are:
+\begin{itemize}
+\item Increase the cluster utilization of Hops-YARN
+
+\item Increase the ratio of heartbeats processed by Hops-YARN
+  scheduler over the total number of heartbeats received
+\end{itemize}
+
+In order to achieve the aforementioned goals, the following sub-goals
+have been set:
+\begin{itemize}
+\item Profile the execution workflow in order to identify bottlenecks
+  and hotspots
+
+\item Minimize the pure transactional commit time to MySQL Cluster NDB
+
+\item Parallelize the commit mechanism of Hops-YARN while at the same
+  time guarantee consistency
+
+\item Provide asynchronous API for database operations that do not invalidate the
+  consistency model of Hops-YARN
+
+\item Evaluate the performance impact of each solution
+\end{itemize}
