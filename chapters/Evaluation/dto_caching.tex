@@ -1,5 +1,5 @@
-In Section \ref{sec:dto_caching} we have described the issue of
-creating Data Transfer Objects with ClusterJ. In Figure
+In Section \ref{sec:dto_caching} the issue of
+creating Data Transfer Objects with ClusterJ was introduced. In Figure
 \ref{fig:impl_dto_no_cache} is depicted the time needed to create a number of
 DTOs and persist them in the database. The evaluation of the Caching
 mechanism was done both with a micro-benchmark but also with simulations
@@ -25,7 +25,7 @@ time is massive. The ``creation'' time in the second case is almost
 zero until the cache limit is reached. Even when the number of DTOs
 requested are more than the cache size, it is still much faster. At
 the time the benchmark was done, the cache size of the sessions was
-fixed to number. It is expected the performance to be better with the
+fixed to a number. It is expected the performance to be better with the
 dynamic size of the cache.
 
 The next evaluation parameter is the mean time for a Transaction State

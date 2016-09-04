@@ -20,7 +20,7 @@ cluster. The time to commit affects both the scheduler and the
 ResourceTracker regarding the updated view of the cluster and this has
 a direct impact on the cluster utilization. For the simulation with
 3000 NodeManagers the average commit time, even though it was already
-low it dropped 24 ms from 40 ms. The difference is more visible
+low it dropped to 24 ms from 40 ms. The difference is more visible
 for the simulation with 5000 nodes in the cluster where the commit
 time dropped to 60 ms from 150 ms. In general we can observe a tension
 to half the commit time and this is reasonable for several
@@ -47,7 +47,7 @@ enough. Nevertheless, we have managed to improve the cluster
 utilization by a few percentages for a 5000 nodes simulation, reaching
 86 $\%$. The number of containers created in a 5000 nodes cluster
 increased by 10$\%$ with the Garbage Collector service while in a 3000
-nodes cluster it remained almost the same. Moreover, there is interesting
+nodes cluster it remained almost the same. Moreover, there is an interesting
 side effect with decreased commit time. Since, TSs take less time to
 commit, the blocking TSs that cannot be aggregated also spent less
 time in the waiting queues of the Transaction Manager. That leads to
@@ -56,6 +56,6 @@ simulation with 5000 NodeManagers without the GC service, there were
 roughly 900 TS commits with on average 2000 objects to persist just
 to update the status of NodeManagers. On the contrary, with the GC
 service, there were 1690 TS commits with 960 objects to persist for
-the NodeManagers. This side effect also helped vanish the rollback of
+the NodeManagers. This side effect helped vanish the rollback of
 transactions due to overloading (Section \ref{sssec:impl_aggr_new}), 
 since there were not that many TSs in the queue to aggregate.

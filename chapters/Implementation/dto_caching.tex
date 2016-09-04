@@ -8,7 +8,7 @@ data on a MySQL Cluster from a Java application. Every operation on
 Hops and Hops-YARN, except for the events received from the NDB Event
 API, goes through ClusterJ which in turn uses the C++ NDB API. The
 mapping between a table-oriented view and a Java object is done
-through specially decorated interfaces. The interface must also provide signatures
+through specially decorated interfaces. The interface should provide signatures
 for the getters and setters methods.
 
 For example in Listing \ref{lst:clusterj_intf} is the interface for
@@ -29,7 +29,7 @@ annotated interface},label=lst:clusterj_intf]{resources/listings/clusterj_intf.j
 
 Upon completion of the task discussed in the previous section, we
 profiled again the commit phase of a Transaction State to discover
-spots where we could possibly improve. Surprisingly we discovered that
+spots that could be possibly improved. Surprisingly we discovered that
 we suffered from the overhead of creating DTOs with ClusterJ. Looking
 at the results of a micro-benchmark that created and persisted a
 number of DTOs was astonishing. In Figure \ref{fig:impl_dto_no_cache},
@@ -63,8 +63,8 @@ is a very difficult task and was not considered as an
 option. Moreover, we do not want to maintain one more project.
 
 In Hops, ClusterJ sessions are wrapped around \emph{HopsSession}s. The
-solution we designed was a DTO cache for the sessions we were
-using. A session would have each own cache space that would be filled
+solution designed was a DTO cache for the database sessions.
+A session would have each own cache space that would be filled
 up with instances created by the ``slow'' ClusterJ instantiation
 process. When we actually needed to use a DTO, we would fetch it from
 the cache which is faster since the objects would have already been
@@ -73,9 +73,9 @@ again with new instances. The cache generator service should be used
 cautiously. We should not max-out CPUs just for creating cached DTOs, so the
 cache would be enabled only for a fraction of sessions and only for
 heavy-duty DTOs. The reason why we decided to have both cache-enabled
-and cache disabled sessions, was that we did not want to pay the
-cache-miss penalty for the type of DTOs that we already know we do not
-cache. An overall architecture of Hops-YARN database session provider
+and cache-disabled sessions, was to avoid paying the
+cache-miss penalty for the type of DTOs that we already know it is not
+cached. An overall architecture of Hops-YARN database session provider
 is illustrated in Figure \ref{fig:impl_dto_session_arch}. A
 transaction requests a cache-disabled session from the cache-disabled
 session pool $(1)$. If there is a session available -- not used by
@@ -114,8 +114,8 @@ cached objects and increase the cache size. We will see later how
 the size of the cache is increased. For every \texttt{HopsSession}
 that has its cache enabled, there is an instance of
 \texttt{DTOCacheImpl} which provides methods for (de)registering a DTO
-type to the cache and methods that delegate putting and getting to the
-appropriate \texttt{CacheEntry}. To avoid the cache-miss penalty there
+type to the cache and methods that delegate putting and getting objects to the
+appropriate \texttt{CacheEntry}. To avoid the cache-miss penalty there are
 two ways to ``instantiate'' DTO objects. The first one is the
 \texttt{newInstance} which makes a call to ClusterJ to create the
 object. We use this for non-cached DTO types. The other variation is
@@ -161,7 +161,7 @@ All the parameters for the caching mechanism are specified by a
 configuration file, \texttt{dto\_cache-config.xml} in
 \texttt{hops-metadata-dal-impl-ndb} that is loaded when
 the service starts. A typical example looks like in Listing
-\ref{lst:dto_cache_conf}. First, we specify how many sessions
+\ref{lst:dto_cache_conf}. First, it is specified how many sessions
 will have their cache enabled, then a hard limit on the number
 of threads that will be created to populate the sessions' cache and
 the number of sessions each worker thread will handle. Then in line 14
@@ -178,7 +178,7 @@ the maximum size and the step which the cache size will be increased after some
 threshold of cache-misses.
 
 The caching mechanism explained in this section boosted the
-performance of Hops-YARN as we will see in Chapter \ref{chap:evaluation}. Yet
+performance of Hops-YARN as it is presented in Chapter \ref{chap:evaluation}. Yet
 we have not discovered the advantages in full extend since we need to
 experiment more with different types of DTOs. For sure ClusterJ's way
 of creating DTOs is not optimal, imposing a great overhead to our system.

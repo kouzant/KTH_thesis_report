@@ -1,7 +1,7 @@
 The impact of the aggregation mechanism in the Transaction Manager was
 measured with a synthetic payload that should be persisted in
-NDB. Then we measured the total number of transaction commits that
-took place, the average time required by each transaction and the
+NDB. The total number of transaction commits was measured,
+the average time required by each transaction and the
 total time taken for the payload to be committed. The comparison is
 between the \emph{Simple} and \emph{Aggregated} commit mechanism.
 
@@ -9,7 +9,7 @@ The payload was for creating 100 Applications. Each application would
 uniform randomly request or release 1000 containers on 30 nodes
 chosen also uniformly at random. A new Transaction State object object
 was created with 60$\%$ probability over re-using an existing
-one. Finally, when all this information was tracked by the Transaction
+one. Finally, when all this information was tracked, the Transaction
 State objects were persisted in the database in a foreign-key free
 schema. The reason to pick hosts
 and TS objects randomly is to create conflicts in the commit mechanism
@@ -42,7 +42,7 @@ average time needed to commit a single TS in the database is greater
 in the new version, since now the TS contains much more
 information. In some cases the AggregatedTransactionState was
 aggregating up to 200 Transaction States. Also, some times the commit
-time per TS was above 150 but the standard deviation is very low with
-most of the results near the mean value. Overall, we spent more
+time per TS was above 150 ms but in general the standard deviation is very low with
+most of the results near the mean value. Overall, we spend more
 than the half of the time we spent with the Simple mechanism to persist
 the whole payload.

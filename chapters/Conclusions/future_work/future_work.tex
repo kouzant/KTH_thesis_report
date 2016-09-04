@@ -5,11 +5,11 @@ In most of the cases the evaluation has been done using simulations
 measuring among others the cluster utilization while in others the
 evaluation has been done using benchmarks. It would be more complete
 if in all cases the benchmarks were supported by simulation
-results. That way the perfomance improvements introduced by each step
+results. That way the performance improvements introduced by each step
 would be more clear.
 
 Currently we do not have any insight on the content of Transaction
-State objects, thus we treat them equally. In real world scenarios,
+State objects, thus they are treated equally. In real world scenarios,
 during the allocation of resources, the Transaction State would carry
 more information about allocated containers than when the cluster is
 full and no further allocations can be made. A fine-grained inspection
@@ -17,8 +17,8 @@ on the content of a TS might improve performance further more. For
 example in the commit mechanism, when an Aggregated Transaction State
 object is overloading NDB, the transaction will roll-back and the
 aggregation policy will enforce a lower limit. If we had any
-information on the content of the TS before hand, we could have
-avoided that situation.
+information on the content of the TS before hand, this situation could
+have been avoided.
 
 As it is already mentioned, the Garbage Collector service does not
 perform primary key operations. It was a design decision that would
