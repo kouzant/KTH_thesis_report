@@ -1,7 +1,6 @@
-All these read/write operations to the database do not come without
-a cost. First and foremost is the network latency. Even with high
-throughput, low latency network between the RM/RT and the database, still
-it takes more time than in-memory operations. Especially in cases
+Even with high
+throughput, low latency network between the RM/RT and the database, it
+still takes more time than in-memory operations. Especially in cases
 where RM operations need more than one round-trip to the database, the
 difference in performance is noticeable.
 
@@ -16,7 +15,7 @@ all. Moreover, foreign key constraints work the other way around. By
 removing the information about a node from the database we want the
 information about running containers on that node to be purged
 too. Such constraints, although they seem tempting to use, pose a
-great performance degradation. Particularly when we aim for millions
+great performance degradation as we will show later in this thesis. Particularly when we aim for millions
 of operations per second, the use of foreign key constraints should be
 limited and very well designed.
 

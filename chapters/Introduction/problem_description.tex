@@ -3,12 +3,14 @@ petabytes and exabytes. Distributed file systems like GFS
 \cite{Ghemawat:2003:GFS:1165389.945450}, 
 GlusterFS \cite{glusterfs}, HDFS \cite{Shvachko:2010:HDF:1913798.1914427} etc come to extend
 the traditional file systems located in a single machine. Storing the
-datasets is one half of the problem though. The second part is
-managing the computational resources on a cluster. A cluster consists
+datasets is one half of the problem though. A cluster consists
 of several physical machines, sometimes thousands of them, and each
-machine has numerous CPUs and RAM modules. Users of the cluster issue
+machine has numerous CPU and RAM modules and hard disk drives that store
+the datasets. Users of the cluster issue
 their jobs with certain CPU and RAM requirements, as well as the files
-which they want to access. On a very high level abstraction there is
+they want to access. The second half of the problem is to manage
+the available computational resources on that cluster. On a very high
+level abstraction there is
 an entity which has knowledge of the available resources and should
 schedule the jobs accordingly. The view of the cluster from the
 \emph{scheduler} perspective is updated frequently with the new
@@ -42,7 +44,7 @@ service should also heartbeat the RM. This produces a considerable
 amount of load on the RM side which has to handle all those heartbeats
 and also make scheduling decisions.
 
-In Hops in order to improve performance and HA of the RM we have introduced an
+In Hops in order to improve performance and High Availability (HA) of the RM we have introduced an
 in-memory distributed MySQL database which stores all the necessary
 metadata. One great feature of Hops-YARN is that the
 \emph{ResourceTrackerService} (RT) of the RM is distributed into multiple
@@ -61,4 +63,5 @@ cluster. That makes our solution highly available with minimum
 failover period. When a RM instance fails it re-builds the view of the
 cluster by reading the latest state from the database. More details on
 the architecture of both YARN and Hops-YARN will be given in Chapter
-\ref{chap:background} and \ref{chap:implementation}.
+\ref{chap:background} and \ref{chap:implementation}. All these
+read/write operations to the database do not come without a cost.

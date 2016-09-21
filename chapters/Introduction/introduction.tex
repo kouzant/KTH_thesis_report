@@ -1,8 +1,6 @@
 In the last years, the storage capacity of hard disk drives has
 increased dramatically while at the same time their price has
-decreased. Even though solid-state drives are still quite expensive,
-big enterprises may benefit from the throughput they provide. This
-trend of ``cheap'' storage solutions has led companies and research
+decreased. This trend of ``cheap'' storage solutions has led companies and research
 institutes to store a volume of data that has never been stored
 before. In 2014 Facebook was processing 600 TB daily
 \cite{facebook_data}
@@ -11,7 +9,8 @@ while Google in 2008 was processing more than 20 PB of data per day
 
 
 Another interesting area that is already generating a huge volume of
-raw data is the DNA sequencing. According to \cite{10.1371/journal.pbio.1002195} the Sequence
+raw data is the DNA sequencing. According to Zachary D. Stephens et
+al. \cite{10.1371/journal.pbio.1002195} the Sequence
 Read Archive maintained by the United States National Institutes of Health
 National Center for Biotechnology Information already contains more
 than 3.6 petabytes of raw sequence data for a wide variety of samples
@@ -34,7 +33,9 @@ distributed system to harness the power of those data and extract
 valuable results within a reasonable time frame. On top of that we have
 to take under consideration that hardware will fail for various
 reasons. A minimum requirement would be not to lose our data, so we
-should keep them in several replicas. Going one step further, we would
+should keep them in several replicas. Since data are scattered across
+different computers, processing jobs should also follow a
+distributed fashion. Going one step further, we would
 like our analyzing jobs to continue running even though one machine failed. These
 jobs usually take hours to complete, so re-running them is not the
 best approach.
