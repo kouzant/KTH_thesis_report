@@ -2,23 +2,21 @@ Large organizations and research institutes store a huge volume of data nowadays
 In order to gain any valuable insights distributed processing frameworks over a
 cluster of computers are needed. Apache Hadoop is the prominent framework for distributed
 storage and data processing. At SICS Swedish ICT we are building Hops, a new distribution
-of Apache Hadoop supported by a distributed, highly available MySQL
-Cluster NDB. Hops-YARN is the resource management framework of Hops
-with distributed ResourceManagers load balancing the\\
-ResourceTrackerService. In Hops-YARN we make heavy usage of the
-back-end database storing all the ResourceManager's metadata and
-incoming RPCs to provide high fault tolerance and very fast recovery
-time. Also, the Event API of NDB is utilized as a
-communication transport among the ResourceManager and the distributed
-ResourceTrackers.
+of Apache Hadoop relying on a distributed, highly available MySQL
+Cluster NDB to improve performance. Hops-YARN is the resource management framework of Hops
+which introduces distributed resource management, load balancing the
+tracking of resources in a cluster. In Hops-YARN we make heavy usage of the
+back-end database storing all the resource manager metadata and
+incoming RPCs to provide high fault tolerance and very short recovery
+time.
 
 This project aims in optimizing the mechanisms used for persisting
 metadata in NDB both in terms of transactional commit time but also
-in terms of pre-processing them while at the same time guarantee the
-consistency of RM's state. Under no condition should the in-memory RM
+in terms of pre-processing them. Under no condition should the in-memory RM
 state diverge from the state stored in NDB. With these goals in mind
 several solutions were examined that improved the performance of the
-system, making Hops-YARN comparable to Apache YARN. The solutions
+system, making Hops-YARN comparable to Apache YARN with the extra benefits
+of high-fault tolerance and short recovery time. The solutions
 proposed in this thesis project enhance the pure commit time of a
 transaction to the MySQL Cluster and the pre-processing and parallelism
 of our Transaction Manager. The results indicate that the performance
