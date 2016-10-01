@@ -4,7 +4,14 @@ an object that holds all the information that should be persisted in
 the database back-end in a consistent way. Updates in the RM state are
 generated either from heartbeats received from NMs and AMs or from
 events that are streamed from the NDB event API (see Section
-\ref{ssec:hops_yarn_load_balance}). Every modification in the
+\ref{ssec:hops_yarn_load_balance}). The distributed
+\emph{ResourceTrackingService} of Hops-YARN receive heartbeats from the
+NodeManagers and persist them in NDB. MySQL Cluster has an event API
+that can stream events to subscribers. In RM there is a custom C++
+library that receives the events emitted from NDB, creates a Java
+representation of them and put them in FIFO queue. In the background
+there is a Hops service that polls from the queue and triggers the
+appropriate events. Every modification in the
 scheduler state should be reflected with updates in the corresponding
 tables in NDB. Such modifications include:
 \begin{itemize}
@@ -57,7 +64,7 @@ want to persist in the database and \texttt{add*ToRemove} for entries
 that we want to delete from the database. Even inside a TS we should
 be very careful on how we access the fields. A TS holds modifications
 from several RPC requests that may modify the same element. For
-example one RPC might create a new container and the next one to
+example one RPC might create a new container and the next one
 destroy it. YARN internals are event-based. So there is no guarantee
 about the order that events will be processed. The second RPC might
 follow a different code path and finish earlier than the first one. In
@@ -84,7 +91,7 @@ It is responsible for creating new TS, provide the
 current TS to methods that have requested it and keep track of how many
 RPCs have requested the TS.
 
-Heartbeats from AMs and NMs from the side of RM are perceived as
+Heartbeats from AMs and NMs are perceived as
 RPCs. Upon an RPC, the method invoked will ask for the TransactionStateManager
 to provide the current TS. The TS will be piggybacked to every event
 triggered by RM components and ``travel'' all the way until that
@@ -122,30 +129,15 @@ new RPCs. At the same time but in a \textbf{different thread}, the previous
 Transaction State is committed to the database as described in Section
 \ref{ssec:impl_aggr_mechanism}.
 
-In Hops-YARN we have distributed the \emph{ResourceTrackingService} to
-multiple machines in the cluster. They receive heartbeats from the
-NodeManagers and persist them in NDB. MySQL Cluster has an event API
-that can stream events to subscribers. In RM there is a custom C++
-library that receives the events emitted from NDB, creates a Java
-representation of them and put them in FIFO queue. In the background
-there is a Hops service that polls from the queue and triggers the
-appropriate events. The Transaction State is also included in these
-events as the cascading modifications should be persisted in the
-database. The same Transaction State manager service is used as
-described in the previous paragraph, so from the manager's perspective
-there is no difference between RPC events and NDB events.
+The Transaction State should also be included in the
+events triggered by streamed NDB events as the cascading modifications
+should be persisted in the database. The same Transaction State
+manager service is used as described in the previous paragraph,
+so from the manager's perspective there is no difference between
+RPC events and NDB events.
 
 \subsection{Aggregation mechanism}
 \label{ssec:impl_aggr_mechanism}
-Heartbeats arrive in the RM and invoke specific methods. The methods
-invoked create specific events which include the TS and are sent to an
-event dispatcher thread. The event dispatcher will forward the events
-to the appropriate RM components that will trigger some actions and
-probably create more events. All along the ``journey'' of these
-events, TS track all the necessary modifications that should be
-persisted in the database back-end. After all events in a batch have
-been properly handled they should be committed in NDB.
-
 Persisting in a non-volatile storage solution is expensive due to
 exclusive locks, OS buffers, I/O interrupts etc. On top of that,
 persisting data in a remote database, introduces a
@@ -182,15 +174,14 @@ constraints are:
   phase of $TS_1$ begins
 
 \item If Transaction States $TS_0$ and $TS_1$ modify different YARN
-  Application \textbf{and} different NodeManager, they should be committed in parallel
+  Application \textbf{and} different NodeManager, they can be committed in parallel
 \end{itemize}
 
 Every TS keeps a list with the IDs of the applications it modifies and
 a list with the IDs of the nodes it modifies. In the commit mechanism,
 there is a FIFO queue for each and every application ID and node
 ID. Before committing a TS, the mechanism puts it in the corresponding
-queues both for the applications and the nodes it modifies. Then it
-gets the IDs of the applications and nodes it modified. In order for
+queues both for the applications and the nodes it modifies. In order for
 the TS to be committed, it should be in the \textbf{head} of the
 queues for the corresponding application IDs \textbf{and} node IDs. If
 it is not in the head of one application or node queue, it means that
@@ -281,10 +272,10 @@ completes its transaction, removed from the queues and now
 The existing mechanism described in the section above provided the
 consistency model we required and parallelism for
 non-conflicting TSs. The major issue that had to be addressed was that
-for conflicting TSs $(1)$ they had to wait in the queue for another TS
-to finish, in the example above \texttt{TS\_1} and \texttt{TS\_2} and
+for a conflicting TS $(1)$ it had to wait in the queue for each and
+every of the previous TSs to finish, in the example above \texttt{TS\_1} and \texttt{TS\_2} and
 $(2)$ for every transaction committed we paid the network latency
-penalty and the time probably to acquire locks etc. In order to solve
+penalty and the time to acquire locks in the database etc. In order to solve
 the first problem we examined different solutions. Initially,
 a more fine-grained locking system was tried. Instead of locking on application and
 node IDs, try to lock on containers. Although this solution would
@@ -300,10 +291,10 @@ Section \ref{sssec:impl_aggr_old} by aggregating multiple TSs into a
 single one while it guarantees consistency. The queue system still
 gives us the proper order in which the TSs should be persisted. At the
 beginning a TS
-is examined if it should be persisted in the database. If it is not
+is examined to determine if it should be persisted in the database. If it is not
 possible to be persisted due to conflicting TSs then it is put in the
-\emph{toBeAggregated} set. If it is permitted to commit, then it does so
-and constructs an extended TS called
+\emph{toBeAggregated} queue. If it is permitted to commit, then it does so
+and the commit mechanism constructs an extended TS called
 \emph{AggregatedTransactionState}.
 
 The \emph{AggregatedTransactionState} contains TSs from the
@@ -315,8 +306,8 @@ following aggregation rules:
     been committed and removed. So now it is in the head of the
     queues.
 
-  \item A TS is still not in the head of the queues, but all the
-    conflicting TSs that should be committed before, have already been
+  \item A TS is not in the head of the queues, but all the
+    conflicting TSs that should be committed before it, have already been
     aggregated in the \emph{AggregatedTransactionState}.
 \end{enumerate}
 
@@ -333,7 +324,10 @@ with a ``big'' Transaction State, the
 \emph{AggregatedTransactionState} that will be committed in the
 database. The \emph{AggregatedTransactionState} class actually extends
 the \emph{TransactionState} class and for every TS that is aggregated
-it updates the data structures with the modifications of that TS. The
+it updates the data structures with the modifications of that
+TS. Internally, the update process
+could be either insertion of new values in the data structures
+or overwriting existing values. The
 \emph{toBeAggregated} data structure is a FIFO queue so the TSs that
 are examined for aggregation are kept in the correct order. At the
 end of the aggregation process, the data structures of the
@@ -344,9 +338,9 @@ Consider the state of the queues as in Figure
 cannot be committed because they are blocked by \texttt{TS\_0} so they
 are added to the \emph{toBeAggregated} queue. At some
 point \texttt{TS\_0} is committed in the database, removed from the
-queues as in Figure \ref{fig:impl_tx_aggr_sub3}, creates the
-\emph{AggregatedTransactionState} (ATS)
-and starts the aggregation process. \texttt{TS\_1} is the first
+queues as in Figure \ref{fig:impl_tx_aggr_sub3}, the
+\emph{AggregatedTransactionState} (ATS) is created
+and the aggregation process is started. \texttt{TS\_1} is the first
 candidate for aggregation. At that point \texttt{TS\_1} is at the head
 of its respective queues and following the aggregation rule $1$ it is
 aggregated. All the data structures of \texttt{TS\_1} are copied to
@@ -354,10 +348,10 @@ the data structures of the ATS. Next in the \emph{toBeAggregated} set
 is \texttt{TS\_2}. \texttt{TS\_2} is not the head in the queue for
 application \texttt{app\_1} but the conflicting TS, \texttt{TS\_1}, has
 already been aggregated. So according to aggregation rule $2$,
-\texttt{TS\_2} is also aggregated, probably updating the values that
+\texttt{TS\_2} is also aggregated, probably overwriting the values that
 \texttt{TS\_1} has put in TSA. The \emph{toBeAggregated} set is now
 empty and the ``big'' AggregatedTransactionState is committed to the
-database. Compared to the existing commit mechanism, where we have
+database. Compared to the previous commit mechanism, where we have
 done three commits in the database, we have now reduced it to two.
 
 \begin{figure}
@@ -396,7 +390,7 @@ been aggregated so it is also put in the
 \texttt{TS\_5} are also aggregated. Now the
 \emph{AggregatedTransactionState} contains the modifications of
 \texttt{TS\_1}, \texttt{TS\_2}, \texttt{TS\_3}, \texttt{TS\_4},
-\texttt{TS\_5}, Figure \ref{fig:impl_tx_aggr_ex1} and begins the commit phase. With the previous commit
+\texttt{TS\_5}, Figure \ref{fig:impl_tx_aggr_ex1}, and begins the commit phase. With the previous commit
 mechanism, every TS would have performed the commit phase individually introducing
 considerable delay due to the RTT to the database, whereas with the
 new commit mechanism we only require two commits in the database.
@@ -415,9 +409,11 @@ mechanism tries again to aggregate. Users can implement their own
 policy as it fits their needs without having to change the commit
 mechanism code.
 
+\subsection{Conclusions}
+\label{ssub:impl_tx_merge_conclusions}
 Overall, the new commit mechanism addresses both the waiting time in
 the queue and the communication latency. TSs do not have to wait in
-the queue for all the conflicting TSs to be committed. Once one
+the queue for all the previous conflicting TSs to be committed. Once one
 conflicting TS is committed then the mechanism aggregates as many as
 possible TSs. Moreover, since multiple TSs are squashed into a single
 one, there is only one commit phase reducing the network latency.

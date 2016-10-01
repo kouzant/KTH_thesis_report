@@ -1,10 +1,12 @@
-Following the improvements we have made with the Transaction State
-commit mechanism we profiled again YARN. We saw that the performance
-was in general better but there were still some cases that should be
-improved. These include the time spent when committing a Transaction
+In Section \ref{sec:fk_constraints} I have explained how the foreign
+key constraints were removed from Hops-YARN. After profiling more the
+system, we realized that this was not enough. There were still some
+cases that should be improved.
+These include the time spent when committing a Transaction
 State in the database. The actual time required to store some
-information to the database was too high. Two cases where examined that
-they were slow for two different reasons explained below.
+information to the database was too high. Two cases have been
+distinguished that
+they were very slow for two different reasons explained below.
 
 The first set of operations that were slow to commit were regarding
 the RPCs we store for recovery. As it is already mentioned Hops-YARN
@@ -48,35 +50,16 @@ good architecture, persisting and deleting thousands of rows in the
 database every second is a tough work and a gain of a few milliseconds
 in commit time improves the overall performance.
 
-\begin{figure}
-\centering
-\includegraphics[scale=0.7]{resources/images/Implementation/rpc_fk_overhead.png}
-\caption{RPC foreign key constraints micro-benchmark}
-\label{fig:impl_fk_overhead}
-\end{figure}
-
 If you recall from Section \ref{ssec:impl_fk_appmaster_rpc}, we have
 not removed the foreign key constraints from the database schema for
-these tables. At that point we discovered that the foreign
-key constraints in the RPCs tables really killed performance. We run
-some micro-benchmarks to prove the overhead and the results are shown in
-Figure \ref{fig:impl_fk_overhead}. The red line in the diagram is the
-time needed to remove rows from the tables in Figure
-\ref{fig:impl_fk_yarn_rpc}. Then the schema has changed and removed
-the foreign keys. The time to remove the RPCs from the database
-without foreign keys is illustrated with the light blue colour. The impact
-on performance of foreign keys in our schema was huge. The performance
-for persisting data with (blue line) and without (brown) foreign keys
-is comparable until 1500 RPCs but then the schema without the foreign
-keys performed better. It was clear from the micro-benchmark that
-foreign keys should be removed from this set of tables as well. Before
+these tables. Before
 removing completely the constraints we have experimented with a tree
 structure of the foreign keys as in Figure
 \ref{fig:impl_fk_alternate_schema}. In this schema, only the tables
 \texttt{yarn\_heartbeat\_rpc} and \texttt{yarn\_allocate\_rpc} would
-have foreign keys to \texttt{yarn\_appmaster\_rpc}. The
-micro-benchmark has shown that a schema with two foreign key
-constraints has similar performance with a no foreign key constraints
+have foreign keys to \texttt{yarn\_appmaster\_rpc}. The results of the
+micro-benchmark in Figure \ref{fig:impl_fk_overhead} has shown that a schema with two foreign key
+constraints had similar performance with a no foreign key constraints
 schema. Then the tables specific to AM \emph{allocate} and NM
 \emph{heartbeat} would have foreign keys to
 \texttt{yarn\_allocate\_rpc} and \texttt{yarn\_heartbeat\_rpc}
@@ -99,9 +82,7 @@ are slow in this part, this will increment the commit time of the
 whole Transaction State which would make other Transaction States to
 be blocked more time in the wait queue having a direct impact on the
 cluster utilization. Persisting new RPCs is done when an RPC arrives
-and does not directly affect the Transaction State commit time. When
-the RM recovers from a failure, it goes through the
-\texttt{yarn\_appmaster\_rpc} table and reconstructs the stored RPCs.
+and does not directly affect the Transaction State commit time.
 
 In the new implementation, an extra table in the
 database has been created, called \texttt{yarn\_rpc\_gc} which stores the \texttt{rpcid}
@@ -212,4 +193,15 @@ response has an incremented ID. At any time, there is only one ID for
 each application attempt stored in this table. When the scheduler
 constructs the last allocate response before it crashed, it filters
 the entries read from \texttt{yarn\_allocated\_containers} and
-\texttt{yarn\_completed\_containers\_statuses} with the valid response ID.
+\texttt{yarn\_completed\_containers\_statuses} with the valid response
+ID.
+
+\subsection{Conclusions}
+\label{ssec:impl_gc_service_conclusions}
+The new transaction state commit mechanism and the removal of foreign
+key constraints improved the performance of Hops-YARN both in terms of
+commit time and cluster utilization. Some delete operations that were
+implicitly dictated by insert operations were replaced by the Garbage
+Collector service. This reduced the number of SQL queries when committing a
+Transaction State in the database while guaranteed the required
+consistency model.

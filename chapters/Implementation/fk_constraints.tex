@@ -12,11 +12,11 @@ The database schema of Hops consists of 95 tables, 64 out of them are
 used by Hops-YARN. The information they store span from incoming RPCs
 to scheduler state and nodes' statuses. We make heavy use of foreign
 key constraints, mainly the \texttt{ON DELETE} referential action, to
-ensure integrity when a row from a parent table is deleted. Although
-the database schema of Hops-YARN is too big to fit in
-a single page, Figure \ref{fig:impl_fk_yarn_schema}, the number of
-foreign key relationships -- they are illustrated with a solid line --
-is clear. There our two reasons why we actually have relationships
+ensure integrity when a row from a parent table is deleted. The
+database schema of Hops-YARN is depicted in Figure
+\ref{fig:impl_fk_yarn_schema}. The foreign key relationships
+are illustrated with a solid line between the parent and child tables.
+There are two reasons why we actually have relationships
 between tables. The first one is because there is indeed semantically a
 relationship between the tables. For example in Figure
 \ref{fig:impl_fk_yarn_rmnode}, the table \texttt{yarn\_rmnode} is used by
@@ -37,10 +37,39 @@ tables. Again, we do not want orphan entries and we avoid this by the
 
 Foreign keys in relational databases is a great feature. They do not
 come without a cost though. For bulk and frequent operations they kill
-performance. In our case that we want to scale to 10k nodes in a
+performance. In Figure \ref{fig:impl_fk_overhead} is presented the
+result of a micro-benchmark measuring the time needed to perform
+database operations with and without foreign key constraints. The red
+line in the diagram is the time needed to remove rows from the tables in Figure
+\ref{fig:impl_fk_yarn_rpc}. Then the schema has changed and removed
+the foreign keys. The time to remove the RPCs from the database
+without foreign keys is illustrated with the light blue colour. The impact
+on performance of foreign keys in our schema was huge. The performance
+for persisting data with (blue line) and without (brown) foreign keys
+is comparable until 1500 RPCs but then the schema without the foreign
+keys performed better. After the improvements introduced by the new
+commit mechanism, the removal of foreign key constraints would improve
+the performance even more.
+
+Although the main reason we use foreign keys is to get the
+automatic cascading in the deletion of a row, this has a side effect to
+insertion operations as well. A row in a child table cannot be inserted
+in the database before its parent, otherwise the RDBMS will complain
+about missing foreign key. To solve it the parent row has to be
+inserted first, then \emph{flush} the buffer and finally insert the child row. This
+imposes an order and cancels out any parallelism.
+
+\begin{figure}
+\centering
+\includegraphics[scale=0.7]{resources/images/Implementation/rpc_fk_overhead.png}
+\caption{RPC foreign key constraints micro-benchmark}
+\label{fig:impl_fk_overhead}
+\end{figure}
+
+In our case we aim to scale to 10k nodes in a
 cluster it means that we have to remove these constraints and replace
 them with some logic in the program that will cascade the deletion to
-children tables. It is very important that this logic will make
+children tables. It is very important that this logic will consist of
 \textbf{primary key} operations for two reasons. The first reason, which
 applies to all relational databases, is that primary keys are indexed,
 thus avoid making full table scan. The indexes usually are
@@ -53,15 +82,7 @@ in the MySQL Cluster. Executing statements based on the primary key,
 alleviates the round-trip time between the Data Nodes, since NDB will
 know exactly in which machine the row you are looking for is
 stored. In non primary key operations, NDB might have to lookup in all
-Node Groups to execute the statement.
-
-Although the main reason we use foreign keys is to get the
-automatic cascading in the deletion of a row, this has a side effect to
-insertion operations as well. A row in a child table cannot be inserted
-in the database before its parent, otherwise the RDBMS will complain
-about missing foreign key. To solve it the parent row has to be
-inserted first, then \emph{flush} the buffer and finally insert the child row. This
-imposes an order and cancels out any parallelism. The rest of this
+Node Groups to execute the statement. The rest of this
 section will describe how the foreign keys were replaced with
 application logic.
 
@@ -88,9 +109,9 @@ application logic.
 
 \subsection{yarn\_rmnode}
 \label{ssec:impl_fk_rmnode}
-NodeManager is the process that runs on every physical node on a
-Hadoop cluster. The scheduler keeps information for every NM
-represented by the \texttt{RMNode} class. The information this
+NodeManager (NM) is the process that runs on every physical node on a
+Hadoop cluster. The RM keeps information for every NM
+represented in memory by the \texttt{RMNode} class. The information this
 class holds is persisted in the \texttt{yarn\_rmnode} table, Figure
 \ref{fig:impl_fk_yarn_rmnode}. This table is parent table to
 numerous other tables such as \texttt{yarn\_node} which holds
@@ -113,7 +134,9 @@ operations. In the client library, \texttt{hops-metadata-dal-impl-ndb},
 application logic was implemented that whenever an RMNode row would be deleted, this
 deletion would be cascaded to the rest of the tables. Children tables
 have the \texttt{rmnodeid} either as part of their primary key or indexed, so we
-avoid a full table scan. The implementation was very straightforward,
+avoid a full table scan. Moreover, \texttt{rmnodeid} is the partition
+key of that table so we avoid unnecessary round trips among the NDB
+Data Node groups. The implementation was very straightforward,
 when the remove method in the client library is called for an RMNode,
 all the rows from the corresponding tables are selected, filtered by the
 \texttt{rmnodeid} and finally remove them. Considering that this
@@ -229,6 +252,8 @@ it is. Later we saw that this setup was greatly affecting the
 performance and the mechanism described in Section
 \ref{sec:gc_service} came in place.
 
+\subsection{Conclusions}
+\label{ssec:impl_fk_conclusions}
 Having all, or most of, the foreign key constraints replaced by
 primary key operations improved performance and made the database
 schema more flexible. Performance was increased for two
