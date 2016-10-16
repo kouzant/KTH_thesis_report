@@ -2,16 +2,16 @@ In Hops-YARN, as it is already mentioned, MySQL Cluster NDB is used
 both as a communication transport and as a persistent storage for
 recovery. At the beginning of the project a thorough profiling of the
 execution workflow has been done to identify the bottlenecks of the
-system. The first step was to remove the foreign key constraints from
-the database schema used by Hops-YARN. In Section
-\ref{sec:fk_constraints} is explained how they were replaced by
-application logic that performs primary key operations. Section
-\ref{sec:tx_aggregation} discusses the evolution of the commit
-mechanism which squashes several blocked transaction into a ``big''
-one reducing the number of commits in the back-end database
-system. Section \ref{sec:gc_service} presents the Garbage Collector
-service of Hops-YARN that removes asynchronously old values from the
-database. With that solution the commit time dropped more improving
+system. The first step analyzed in Section \ref{sec:tx_aggregation}
+was to improve the commit mechanism of Hops-YARN's Transaction
+Manager. The new mechanism squashes several blocked transactions into
+a ``big'' one, reducing the number of commits in the back-end database
+system. Section \ref{sec:fk_constraints} describes the evolution to a
+database schema with no foreign key constraints and how they were
+replaced by application logic that performs primary key operations instead.
+Section \ref{sec:gc_service} presents the Garbage Collector
+service of Hops-YARN that asynchronously removes old values from the
+database. With that solution the commit time dropped even more improving
 the overall performance of the system. Finally, Section
 \ref{sec:dto_caching} explains how the shortcoming of ClusterJ for
 creating DTOs was bypassed by having created them ahead of time in a
