@@ -20,9 +20,8 @@ micro-benchmark performed in Section \ref{sec:dto_caching} but with
 the Caching mechanism. The blue line is the creation time of DTOs, the
 yellow line is the actual commit time and the red one is both the
 creation and the commit time. The cache size of the sessions was 6000
-objects. Comparing the two figures, the difference in the creation
-time is massive. The ``creation'' time in the second case is almost
-zero until the cache limit is reached. Even when the number of DTOs
+objects. The ``creation'' time in the second case is almost
+zero and orders of magnitude less, until the cache limit is reached. Even when the number of DTOs
 requested are more than the cache size, it is still much faster. At
 the time the benchmark was done, the cache size of the sessions was
 fixed to a number. It is expected the performance to be better with the
@@ -81,7 +80,7 @@ UpdatedContainerInfoDTO & 2000 & 10000 & 200\\
 The improvement in the commit time is reflected in the cluster
 utilization as illustrated in Figure \ref{fig:ev_cache_cluster_util}.
 Until 3000 nodes there is no difference in the utilization but the more
-NodeManagers in the simulation, the bigger is the difference. In 10000
+NodeManagers in the simulation, the bigger the difference is. In 10000
 nodes simulation the cluster utilization increased from 56$\%$ to
 77$\%$ and the launched containers from 167177 to 247032 (Figure
 \ref{fig:ev_cache_containers}).

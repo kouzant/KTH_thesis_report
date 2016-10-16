@@ -53,7 +53,7 @@ commit, the blocking TSs that cannot be aggregated also spent less
 time in the waiting queues of the Transaction Manager. That leads to
 ``smaller'' but more AggregatedTransactionStates. For instance, in the
 simulation with 5000 NodeManagers without the GC service, there were
-roughly 900 TS commits with on average 2000 objects to persist just
+roughly 900 TS commits each containing on average 2000 objects to persist just
 to update the status of NodeManagers. On the contrary, with the GC
 service, there were 1690 TS commits with 960 objects to persist for
 the NodeManagers. This side effect helped vanish the rollback of
